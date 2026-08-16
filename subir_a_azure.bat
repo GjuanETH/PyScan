@@ -27,26 +27,28 @@ REM --- 3) Inicializar repo si no existe ---
 if not exist ".git" (
     git init
     git branch -M main
-    git config user.name "Andres Felipe Sanguino Cubillos"
-    git config user.email "anfesacu@gmail.com"
 )
 
-REM --- 4) Configurar el remoto (solo la primera vez) ---
+REM --- 4) Identidad de los commits (se aplica siempre) ---
+git config user.name "Andres Felipe Sanguino Cubillos"
+git config user.email "jdgutierrez017@ucatolica.edu.co"
+
+REM --- 5) Configurar el remoto (solo la primera vez) ---
 git remote get-url origin >nul 2>&1
 if errorlevel 1 (
     echo.
     echo Pega la URL de tu repositorio de Azure DevOps.
-    echo  Ejemplo: https://dev.azure.com/TU_ORG/TU_PROYECTO/_git/pyscan
+    echo  Ejemplo: https://dev.azure.com/jdgutierrez017/Tesis/_git/Tesis
     set /p REPOURL="URL del repo: "
     git remote add origin "!REPOURL!"
 )
 
-REM --- 5) Mensaje del commit ---
+REM --- 6) Mensaje del commit ---
 echo.
 set /p MSG="Describe brevemente este avance (mensaje del commit): "
 if "!MSG!"=="" set MSG=Avance pyscan
 
-REM --- 6) Guardar y subir ---
+REM --- 7) Guardar y subir ---
 git add .
 git commit -m "!MSG!"
 git push -u origin main
@@ -54,6 +56,7 @@ git push -u origin main
 echo.
 echo ============================================
 echo   Listo. Si te pidio usuario/contrasena, usa
-echo   tu email y un Personal Access Token (PAT).
+echo   el email y un Personal Access Token (PAT)
+echo   de la cuenta con acceso al proyecto.
 echo ============================================
 pause

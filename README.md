@@ -10,7 +10,7 @@ sintaxis abstracta (AST)** — que alimentan un clasificador supervisado
 (Random Forest / XGBoost). Arquitectura de monolito modular con patrón
 Pipes and Filters; interfaces con Pydantic; salida JSON/SARIF.
 
-## Estado (Sprints 1-3)
+## Estado (Sprints 1-4)
 
 | Componente | Estado |
 |---|---|
@@ -20,7 +20,7 @@ Pipes and Filters; interfaces con Pydantic; salida JSON/SARIF.
 | Feature Builder | ✅ (parcial) |
 | CLI (`scan`, `info`, `version`) | ✅ |
 | Extractor de entropía (Shannon, ventana deslizante) | ✅ |
-| Extractor AST | ⏳ Sprint 4 |
+| Extractor AST (ast.NodeVisitor) | ✅ |
 | Clasificador ML + dataset | ⏳ Sprint 5 |
 
 Cobertura de pruebas actual: **90%** (objetivo KPI ≥ 80%).

@@ -6,20 +6,26 @@ Comandos:
   pyscan info <paquete>                 Muestra solo los metadatos de PyPI.
   pyscan version                        Muestra la versión.
 
+Códigos de salida de `scan` (aptos para CI):
+  0 = benigno / sin veredicto, 1 = error de análisis, 2 = veredicto MALICIOSO.
+
 En Windows, ejecutar como módulo:  python -m pyscan.cli <comando> ...
 """
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Optional
 
 import typer
 
 from . import __version__
-from .extractors import EntropyExtractor, MetadataExtractor
+from .classifier import ModelNotAvailable, predict
+from .extractors import ASTExtractor, EntropyExtractor, MetadataExtractor
 from .features import build_features
 from .fetcher import FetchError, fetch, get_pypi_json, parse_metadata
-from .models import Package, ScanReport
+from .models import Package, ScanReport, Verdict
+from .sarif import to_sarif_json
 
 app = typer.Typer(add_completion=False, help="pyscan: detección de paquetes maliciosos en PyPI.")
 
@@ -63,35 +69,58 @@ def scan(
     version: Optional[str] = typer.Option(None, "--version", "-v",
                                           help="Versión específica del paquete."),
     json_only: bool = typer.Option(False, "--json", help="Imprime solo el JSON del reporte."),
+    sarif_path: Optional[Path] = typer.Option(
+        None, "--sarif", help="Escribe además el reporte en formato SARIF 2.1.0."),
+    model_path: Optional[Path] = typer.Option(
+        None, "--model", help="Ruta a un bundle de modelo alternativo (.joblib)."),
 ) -> None:
-    """Descarga un paquete de PyPI y ejecuta el análisis estático disponible."""
+    """Descarga un paquete de PyPI y ejecuta el análisis estático completo."""
     report = ScanReport(package=Package(name=name, version=version or "unknown"))
     extractor = MetadataExtractor()
+    ml_note: Optional[str] = None
     try:
         result = fetch(name, version)
         report.package = result.package
         report.metadata = result.metadata
         report.typosquat = extractor.extract(result.package.name, result.metadata)
         report.entropy = EntropyExtractor().extract(result.extracted_path)
+        report.ast = ASTExtractor().extract(result.extracted_path)
         report.features = build_features(typosquat=report.typosquat,
                                          metadata=result.metadata,
-                                         entropy=report.entropy)
+                                         entropy=report.entropy,
+                                         ast=report.ast)
     except FetchError as exc:
         report.errors.append(str(exc))
         report.typosquat = extractor.extract(name)
         report.features = build_features(typosquat=report.typosquat)
         typer.secho(str(exc), fg=typer.colors.RED, err=True)
 
+    # Veredicto del clasificador supervisado (decisión final por ML).
+    if report.features is not None and not report.errors:
+        try:
+            report.prediction = predict(report.features, model_path=model_path)
+        except ModelNotAvailable as exc:
+            ml_note = str(exc)
+
+    if sarif_path is not None:
+        sarif_path.parent.mkdir(parents=True, exist_ok=True)
+        sarif_path.write_text(to_sarif_json(report), encoding="utf-8")
+        if not json_only:
+            typer.echo(f"SARIF escrito en: {sarif_path}")
+
+    is_malicious = (report.prediction is not None
+                    and report.prediction.verdict == Verdict.MALICIOUS)
+    exit_code = 1 if report.errors else (2 if is_malicious else 0)
+
     if json_only:
         typer.echo(report.to_json())
-        raise typer.Exit(code=1 if report.errors else 0)
+        raise typer.Exit(code=exit_code)
 
-    _print_human(report)
-    if report.errors:
-        raise typer.Exit(code=1)
+    _print_human(report, ml_note)
+    raise typer.Exit(code=exit_code)
 
 
-def _print_human(report: ScanReport) -> None:
+def _print_human(report: ScanReport, ml_note: Optional[str] = None) -> None:
     p = report.package
     typer.secho(f"\nPaquete: {p.name} {p.version}", bold=True)
     if p.sha256:
@@ -109,7 +138,31 @@ def _print_human(report: ScanReport) -> None:
         ef = (typer.style(f"{e.suspicious_windows} ventanas >7.0", fg=typer.colors.YELLOW)
               if e.suspicious_windows else "sin ventanas sospechosas")
         typer.echo(f"  entropía: max={e.max} media={e.mean} | {ef}")
-    typer.echo("  (AST: pendiente del Sprint 4)\n")
+    if report.ast:
+        a = report.ast
+        n = len(a.dangerous_calls)
+        af = (typer.style(f"{n} llamadas peligrosas", fg=typer.colors.YELLOW)
+              if n else "sin llamadas peligrosas")
+        typer.echo(f"  AST: {af}"
+                   + (f" -> {', '.join(a.dangerous_calls[:6])}" if n else ""))
+        if a.has_install_hook:
+            typer.secho("       hook de instalación en setup.py", fg=typer.colors.YELLOW)
+        if a.network_literals:
+            typer.echo(f"       literales de red: {len(a.network_literals)}")
+    if report.prediction:
+        pr = report.prediction
+        if pr.verdict == Verdict.MALICIOUS:
+            verdict_txt = typer.style("MALICIOSO", fg=typer.colors.RED, bold=True)
+        else:
+            verdict_txt = typer.style("benigno", fg=typer.colors.GREEN)
+        typer.echo(f"  ML: {verdict_txt} | score={pr.score:.4f}")
+        top = sorted(pr.feature_importance.items(), key=lambda x: -x[1])[:3]
+        if top:
+            typer.echo("       señales principales: "
+                       + ", ".join(f"{k}={v:.3f}" for k, v in top))
+    elif ml_note:
+        typer.secho(f"  ML: sin veredicto — {ml_note}", fg=typer.colors.BLUE)
+    typer.echo("")
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -111,8 +111,14 @@ def download_archive(file_url: str, dest_dir: Path,
                       headers={"User-Agent": config.USER_AGENT}) as resp:
             resp.raise_for_status()
             hasher = hashlib.sha256()
+            downloaded = 0
             with open(dest, "wb") as fh:
                 for chunk in resp.iter_content(chunk_size=8192):
+                    downloaded += len(chunk)
+                    if downloaded > config.MAX_DOWNLOAD_BYTES:
+                        raise FetchError(
+                            f"El artefacto excede el tamaño máximo de descarga "
+                            f"({config.MAX_DOWNLOAD_BYTES // (1024 * 1024)} MB).")
                     hasher.update(chunk)
                     fh.write(chunk)
     except requests.RequestException as exc:
@@ -157,6 +163,8 @@ def _safe_extract_tar(archive_path: Path, dest_dir: Path) -> None:
                 raise FetchError("El paquete excede el número máximo de archivos.")
             if member.issym() or member.islnk():
                 raise FetchError(f"Enlace no permitido en el archivo: {member.name}")
+            if member.isdev():
+                raise FetchError(f"Archivo de dispositivo no permitido: {member.name}")
             target = dest_dir / member.name
             if not _is_within(dest_dir, target):
                 raise FetchError(f"Ruta peligrosa (Zip Slip) detectada: {member.name}")
@@ -180,7 +188,27 @@ def _safe_extract_zip(archive_path: Path, dest_dir: Path) -> None:
             total += info.file_size
             if total > config.MAX_EXTRACT_BYTES:
                 raise FetchError("El paquete excede el tamaño máximo permitido.")
-        zf.extractall(dest_dir)  # noqa: S202 - rutas validadas arriba
+        # Extracción manual contando bytes REALES descomprimidos: la cabecera
+        # `file_size` de un ZIP malicioso puede mentir (zip-bomb), así que el
+        # límite se aplica también sobre el flujo real.
+        real_total = 0
+        for info in zf.infolist():
+            target = dest_dir / info.filename
+            if info.is_dir():
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with zf.open(info) as src, open(target, "wb") as dst:
+                while True:
+                    chunk = src.read(65536)
+                    if not chunk:
+                        break
+                    real_total += len(chunk)
+                    if real_total > config.MAX_EXTRACT_BYTES:
+                        raise FetchError(
+                            "El paquete excede el tamaño máximo permitido "
+                            "(bytes reales descomprimidos).")
+                    dst.write(chunk)
 
 
 # --- Orquestación --------------------------------------------------------

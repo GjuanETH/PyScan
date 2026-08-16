@@ -11,6 +11,8 @@ CACHE_DIR = DATA_DIR / "cache"          # tarballs descargados
 BENIGN_DIR = DATA_DIR / "benign"        # paquetes benignos del dataset
 MALICIOUS_DIR = DATA_DIR / "malicious"  # paquetes maliciosos del dataset
 TOP_PACKAGES_FILE = DATA_DIR / "top_pypi_packages.txt"
+MODEL_DIR = DATA_DIR / "models"          # modelos entrenados (Sprint 5)
+MODEL_FILE = MODEL_DIR / "model.joblib"  # bundle: modelo + features + umbral
 
 # --- PyPI -----------------------------------------------------------------
 PYPI_JSON_URL = "https://pypi.org/pypi/{name}/json"
@@ -22,6 +24,8 @@ USER_AGENT = "pyscan/0.1 (academic supply-chain research)"
 # Tamaño máximo descomprimido permitido por paquete (anti zip-bomb). 200 MB.
 MAX_EXTRACT_BYTES = 200 * 1024 * 1024
 MAX_FILE_COUNT = 20_000
+# Tamaño máximo del artefacto descargado (antes de extraer). 100 MB.
+MAX_DOWNLOAD_BYTES = 100 * 1024 * 1024
 
 # --- Extractor de metadatos / typosquatting ------------------------------
 # Distancia de edición <= a este umbral se considera indicio de typosquatting.
@@ -45,3 +49,7 @@ AST_DANGEROUS_CALLS = (
     "marshal.loads", "pickle.loads",
     "socket.socket", "urllib.request.urlopen", "requests.get",
 )
+
+# --- Clasificador ML (Sprint 5) -------------------------------------------
+# Umbral de decisión por defecto si el bundle del modelo no trae uno propio.
+ML_DEFAULT_THRESHOLD = 0.5

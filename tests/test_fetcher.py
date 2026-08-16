@@ -73,6 +73,49 @@ def test_safe_extract_rejects_unknown_format(tmp_path: Path):
         safe_extract(bad, tmp_path / "out")
 
 
+def test_safe_extract_blocks_real_bytes_bomb(tmp_path: Path, monkeypatch):
+    """El límite debe aplicarse sobre los bytes reales descomprimidos."""
+    import pyscan.config as config
+    archive = tmp_path / "bomb.zip"
+    with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("big.bin", b"\x00" * 100_000)  # 100 KB reales
+    monkeypatch.setattr(config, "MAX_EXTRACT_BYTES", 10_000)  # límite 10 KB
+    with pytest.raises(FetchError, match="tamaño máximo"):
+        safe_extract(archive, tmp_path / "out")
+
+
+def test_safe_extract_blocks_device_file_tar(tmp_path: Path):
+    archive = tmp_path / "dev.tar.gz"
+    with tarfile.open(archive, "w:gz") as tar:
+        info = tarfile.TarInfo(name="evil_dev")
+        info.type = tarfile.CHRTYPE
+        tar.addfile(info)
+    with pytest.raises(FetchError, match="dispositivo"):
+        safe_extract(archive, tmp_path / "out")
+
+
+def test_download_size_cap(tmp_path: Path, monkeypatch):
+    """La descarga se aborta si el artefacto supera MAX_DOWNLOAD_BYTES."""
+    import pyscan.config as config
+    from pyscan.fetcher import download_archive
+
+    monkeypatch.setattr(config, "MAX_DOWNLOAD_BYTES", 1_000)
+
+    class FakeResponse:
+        def raise_for_status(self): ...
+        def iter_content(self, chunk_size):
+            for _ in range(10):
+                yield b"x" * 500  # 5 KB en total
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    class FakeSession:
+        def get(self, *a, **kw): return FakeResponse()
+
+    with pytest.raises(FetchError, match="descarga"):
+        download_archive("https://x/pkg.tar.gz", tmp_path, session=FakeSession())
+
+
 # --- parse_metadata -------------------------------------------------------
 def test_parse_metadata_selects_sdist():
     data = {

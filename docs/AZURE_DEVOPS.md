@@ -59,7 +59,7 @@ La primera vez, dentro de la carpeta `pyscan`:
 git init
 git branch -M main
 git config user.name "Andres Felipe Sanguino Cubillos"
-git config user.email "anfesacu@gmail.com"
+git config user.email "jdgutierrez017@ucatolica.edu.co"
 git remote add origin https://dev.azure.com/TU_ORG/TU_PROYECTO/_git/pyscan
 git add .
 git commit -m "Sprint 1-3: fetcher, extractores de metadatos y entropía, CLI y pruebas"

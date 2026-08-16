@@ -26,6 +26,35 @@ públicos de investigación**.
 > DataDog + BKC + Malregistry suele superarse cómodamente el objetivo de 2.000
 > muestras **únicas** de PyPI.
 
+## 1b. Más fuentes (verificadas) y una distinción clave
+
+Hay dos tipos de fuentes, y conviene no confundirlas:
+
+**(A) Con artefactos reales** — traen el *código* del paquete, que es lo que
+necesitan los extractores de pyscan (entropía, AST, metadatos):
+
+| Fuente | Volumen aprox. | Notas |
+|---|---|---|
+| **DataDog/malicious-software-packages-dataset** | **27.876** maliciosos (PyPI+npm+otros), verificado ago. 2026, Apache-2.0 | El mayor con diferencia; ZIP cifrado, contraseña `infected`. Importar con `scripts/import_datadog.py`. **Ver `docs/INSTRUCTIVO_DATASETS.md`.** |
+| **PyPI Malregistry** (`lxyeternal`) | cientos | El que ya usan |
+| **Backstabber's Knife Collection** | 174 paquetes (PyPI/npm/RubyGems) | Clásico académico; ya citado [4] |
+| **MalOSS** (`osssanitizer/maloss`) | multi-ecosistema | Académico |
+| **Dataset de Ryan et al.** (arXiv:2512.12559) | etiquetado a nivel de sentencia | **Ya lo citan como [10] en el paper**; trae dataset |
+| **Benchmark de Guo et al.** (arXiv:2209.13288) | dataset comparativo | "A Benchmark Comparison of Python Malware Detection Approaches" |
+| **"Classifying Benign/Malicious Packages with ML"** (arXiv:2511.15033) | ~1.242 mal + 3.752 benignos | Útil como referencia y posible fuente |
+
+**(B) Inventarios / avisos (formato OSV)** — traen *nombres y versiones*, NO el
+código (PyPI ya borró los artefactos). Sirven para cruzar/etiquetar:
+
+| Fuente | Notas |
+|---|---|
+| **OpenSSF `ossf/malicious-packages`** | Comunidad, formato OSV, PyPI+npm, ingesta continua. Es una de las fuentes principales de OSV.dev |
+| **OSV.dev** (avisos `MAL-…`) | API y herramientas (osv-scanner, deps.dev) |
+
+> Conclusión práctica: para tener *código real* que analizar, el camino corto es
+> **DataDog** (decenas de miles) + tu Malregistry, deduplicando. Los inventarios
+> OSV/OpenSSF sirven para etiquetar o cruzar, no como fuente del código.
+
 ## 2. Regla de oro: deduplicar y contar lo ÚNICO
 
 Las campañas de malware se repiten entre datasets (el mismo paquete aparece en
