@@ -1,0 +1,68 @@
+{
+  "n_samples": 1926,
+  "errors": 74,
+  "vectors": {
+    "V1_typosquatting": {
+      "label": "Typosquatting / combosquatting",
+      "count": 500,
+      "percentage": 25.96
+    },
+    "V2_install_execution": {
+      "label": "Ejecución en instalación (setup.py)",
+      "count": 388,
+      "percentage": 20.15
+    },
+    "V3_obfuscation": {
+      "label": "Ofuscación / empaquetado (entropía alta)",
+      "count": 2,
+      "percentage": 0.1
+    },
+    "V4_command_execution": {
+      "label": "Ejecución de comandos/código",
+      "count": 1470,
+      "percentage": 76.32
+    },
+    "V5_insecure_deserialization": {
+      "label": "Deserialización insegura",
+      "count": 31,
+      "percentage": 1.61
+    },
+    "V6_encoding": {
+      "label": "Codificación/decodificación (base64)",
+      "count": 302,
+      "percentage": 15.68
+    },
+    "V7_network_exfiltration": {
+      "label": "Red / exfiltración de datos",
+      "count": 808,
+      "percentage": 41.95
+    }
+  },
+  "cooccurrence": {
+    "0": 53,
+    "1": 944,
+    "2": 432,
+    "3": 318,
+    "4": 160,
+    "5": 15,
+    "6": 4
+  },
+  "multi_vector_percentage": 48.23,
+  "top_dangerous_calls": {
+    "subprocess.Popen": 972,
+    "exec": 260,
+    "base64.b64decode": 243,
+    "requests.get": 237,
+    "os.system": 172,
+    "urllib.request.urlopen": 163,
+    "__import__": 115,
+    "base64.b64encode": 99,
+    "socket.socket": 93,
+    "subprocess.run": 71,
+    "eval": 52,
+    "subprocess.call": 50,
+    "compile": 41,
+    "pickle.loads": 21,
+    "os.popen": 14
+  }
+}
