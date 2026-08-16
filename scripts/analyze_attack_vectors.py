@@ -154,7 +154,7 @@ def main() -> int:
                 with tempfile.TemporaryDirectory(prefix="pyscan_av_") as tmp:
                     extracted = safe_extract(path, Path(tmp) / "x")
                     flags, calls = _analyze_dir(name, extracted, meta)
-        except (FetchError, OSError) as exc:
+        except Exception as exc:  # noqa: BLE001 - robustez ante muestras corruptas
             print(f"  [AVISO] {path.name}: {exc}", file=sys.stderr)
             errors += 1
             continue

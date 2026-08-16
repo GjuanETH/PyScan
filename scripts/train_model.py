@@ -121,7 +121,7 @@ def load_or_extract_features(manifest: Path, cache: Path) -> tuple[list[list[flo
                 continue
             try:
                 feats = extract_row(sample, kind, meta_extractor)
-            except (FetchError, OSError) as exc:
+            except Exception as exc:  # noqa: BLE001 - robustez ante muestras corruptas
                 print(f"  [AVISO] {sample.name}: {exc}", file=sys.stderr)
                 skipped += 1
                 continue

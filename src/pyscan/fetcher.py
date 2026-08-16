@@ -156,7 +156,11 @@ def safe_extract(archive_path: Path, dest_dir: Path) -> Path:
 def _safe_extract_tar(archive_path: Path, dest_dir: Path) -> None:
     total = 0
     count = 0
-    with tarfile.open(archive_path, "r:*") as tar:
+    try:
+        tar_obj = tarfile.open(archive_path, "r:*")
+    except tarfile.TarError as exc:  # archivo corrupto o no es un tar real
+        raise FetchError(f"Archivo tar ilegible ({archive_path.name}): {exc}") from exc
+    with tar_obj as tar:
         for member in tar.getmembers():
             count += 1
             if count > config.MAX_FILE_COUNT:
@@ -177,7 +181,11 @@ def _safe_extract_tar(archive_path: Path, dest_dir: Path) -> None:
 def _safe_extract_zip(archive_path: Path, dest_dir: Path) -> None:
     total = 0
     count = 0
-    with zipfile.ZipFile(archive_path) as zf:
+    try:
+        zip_obj = zipfile.ZipFile(archive_path)
+    except zipfile.BadZipFile as exc:  # archivo corrupto o no es un zip real
+        raise FetchError(f"Archivo zip ilegible ({archive_path.name}): {exc}") from exc
+    with zip_obj as zf:
         for info in zf.infolist():
             count += 1
             if count > config.MAX_FILE_COUNT:
