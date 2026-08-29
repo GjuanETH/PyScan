@@ -1,0 +1,62 @@
+{
+  "trained_at": "2026-08-16T21:35:05.986082+00:00",
+  "k_folds": 5,
+  "smote": true,
+  "target_recall": 0.9,
+  "n_samples": 3095,
+  "n_malicious": 1545,
+  "n_benign": 1550,
+  "selected_model": "xgboost",
+  "cv_results": {
+    "random_forest": {
+      "threshold": 0.45,
+      "recall": 0.9638,
+      "precision": 0.9713,
+      "f1": 0.9675,
+      "pr_auc": 0.994,
+      "false_positive_rate": 0.0284,
+      "confusion_matrix": {
+        "tn": 1506,
+        "fp": 44,
+        "fn": 56,
+        "tp": 1489
+      }
+    },
+    "xgboost": {
+      "threshold": 0.54,
+      "recall": 0.9605,
+      "precision": 0.977,
+      "f1": 0.9687,
+      "pr_auc": 0.994,
+      "false_positive_rate": 0.0226,
+      "confusion_matrix": {
+        "tn": 1515,
+        "fp": 35,
+        "fn": 61,
+        "tp": 1484
+      }
+    }
+  },
+  "feature_importance": {
+    "name_min_distance": 0.6196,
+    "is_typosquat": 0.1465,
+    "ast_has_install_hook": 0.0856,
+    "ast_dangerous_calls": 0.0404,
+    "entropy_mean": 0.039,
+    "ast_network_literals": 0.0298,
+    "entropy_max": 0.0222,
+    "has_combo_affix": 0.0168,
+    "author_present": 0.0,
+    "maintainer_count": 0.0,
+    "release_count": 0.0,
+    "requires_count": 0.0,
+    "has_long_description": 0.0,
+    "entropy_suspicious_windows": 0.0
+  },
+  "holdout": {
+    "recall": 0.9711,
+    "precision": 0.9788,
+    "f1": 0.975,
+    "n_samples": 769
+  }
+}
