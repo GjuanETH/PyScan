@@ -114,9 +114,9 @@ children.push(p([
 children.push(h1("2. Metodología de análisis mediante scripts"));
 children.push(p(t("El análisis se apoya en los extractores de análisis estático desarrollados para el MVP, que en ningún momento ejecutan el código inspeccionado. El script scripts/analyze_attack_vectors.py recorre el corpus de paquetes maliciosos, descomprime cada muestra de forma segura y aplica tres extractores complementarios sobre su contenido: el extractor de metadatos (similitud léxica del nombre por distancia de Levenshtein), el extractor de entropía de Shannon por ventanas y el extractor de árbol de sintaxis abstracta (AST). Con las señales resultantes, el script clasifica cada paquete según los vectores de ataque presentes y produce un resumen cuantitativo en formato JSON y CSV, además de una tabla de frecuencias.")));
 children.push(p([
-  t("La correspondencia entre cada vector y la señal que lo evidencia se resume en la Tabla 1. Las frecuencias reportadas en la Sección 3 provienen de la literatura citada; "),
-  t("los valores del análisis propio se completan al ejecutar el script sobre el dataset final del proyecto", { bold: true }),
-  t(" (ver docs/INSTRUCTIVO_DATASETS.md), garantizando que ninguna cifra experimental sea inventada."),
+  t("La correspondencia entre cada vector y la señal que lo evidencia se resume en la Tabla 1. El script se ejecutó sobre un corpus de "),
+  t("2.000 paquetes maliciosos reales", { bold: true }),
+  t(" provenientes de los conjuntos de datos de Datadog Security Labs [5] y PyPI Malregistry [1]; de ellos, 1.926 se procesaron con éxito y 74 se descartaron por estar corruptos o ilegibles. Los benignos (2.000 paquetes del Top de PyPI) se recolectaron con un script análogo. Las frecuencias medidas se contrastan con las reportadas por la literatura en la Sección 3, garantizando que ninguna cifra experimental sea inventada."),
 ]));
 
 // Tabla 1: vector -> señal medida
@@ -144,25 +144,69 @@ children.push(p([
   t("Un análisis independiente sobre 846 paquetes maliciosos de PyPI clasificó el 68,6 % como ataques en tiempo de instalación, el 19 % en tiempo de importación y el 12,4 % en tiempo de ejecución [3]."),
 ]));
 
-// Tabla 2: frecuencias de literatura
+children.push(h2("3.1 Resultados del análisis propio"));
+children.push(p([
+  t("La ejecución del script sobre los 1.926 paquetes maliciosos procesados arrojó la distribución de la Tabla 2. El vector dominante fue la "),
+  t("ejecución de comandos/código (76,32 %)", { bold: true }),
+  t(", seguido de los indicios de red/exfiltración (41,95 %) y del typosquatting/combosquatting (25,96 %). La ejecución en instalación apareció en el 20,15 % de las muestras y la codificación con base64 en el 15,68 %. La deserialización insegura (1,61 %) y la ofuscación por alta entropía (0,10 %) resultaron poco frecuentes en este corpus."),
+]));
+
+// Tabla 2: frecuencias propias vs literatura
 {
-  const w = [Math.round(CONTENT_W*0.30), Math.round(CONTENT_W*0.46), Math.round(CONTENT_W*0.24)];
+  const w = [Math.round(CONTENT_W*0.34), Math.round(CONTENT_W*0.16), Math.round(CONTENT_W*0.34), Math.round(CONTENT_W*0.16)];
   const rows = [
-    ["Ejecución en instalación (setup.py)", "68,6 %–74,81 % de los paquetes se ejecutan al instalarse; 56 % activa la carga en instalación", "[1], [2], [3]"],
-    ["Typosquatting / combosquatting", "61 % de los paquetes usa suplantación de nombres para propagarse", "[2], [4]"],
-    ["Exfiltración de datos / red", "Objetivo más común; el robo de información es el comportamiento más prevalente", "[1], [2]"],
-    ["Ejecución de comandos/código", "Comportamiento prevalente junto al robo de información", "[1]"],
-    ["Ofuscación (codificación/empaquetado)", "Uso frecuente de base64 y ofuscación para evadir detección", "[1], [2]"],
-    ["Combinación de múltiples vectores", ">50 % de los paquetes presenta varios comportamientos maliciosos", "[1]"],
+    ["V4 Ejecución de comandos/código", "76,32 %", "Comportamiento prevalente junto al robo de información", "[1]"],
+    ["V7 Red / exfiltración de datos", "41,95 %", "Objetivo más común; robo de información predominante", "[1], [2]"],
+    ["V1 Typosquatting / combosquatting", "25,96 %", "61 % usa suplantación de nombres para propagarse", "[2], [4]"],
+    ["V2 Ejecución en instalación", "20,15 %", "68,6 %–74,81 % se ejecutan al instalarse", "[1], [2], [3]"],
+    ["V6 Codificación/decodificación (base64)", "15,68 %", "Uso frecuente de base64 para evadir detección", "[1], [2]"],
+    ["V5 Deserialización insegura", "1,61 %", "Vector documentado (pickle/marshal)", "[2]"],
+    ["V3 Ofuscación / empaquetado (entropía)", "0,10 %", "Ofuscación frecuente, mayormente vía base64", "[1], [2]"],
   ];
-  children.push(makeTable(w, ["Vector", "Frecuencia reportada en la literatura", "Fuente"], rows));
-  children.push(caption("Tabla 2. Frecuencia de los vectores de ataque según la literatura empírica. Las cifras del análisis propio se agregan tras ejecutar el script sobre el dataset final."));
+  children.push(makeTable(w, ["Vector de ataque", "% propio (n=1.926)", "Contraste con la literatura", "Fuente"], rows,
+    [{}, { align: AlignmentType.CENTER, bold: true }, {}, { align: AlignmentType.CENTER }]));
+  children.push(caption("Tabla 2. Frecuencia de los vectores medida sobre el corpus propio (2.000 paquetes maliciosos de [1] y [5]; 1.926 procesados) y su contraste con la literatura. Fuente: elaboración propia."));
 }
 
 children.push(p([
+  t("La combinación de vectores fue la norma: el "),
+  t("48,23 % de los paquetes presentó dos o más vectores simultáneos", { bold: true }),
+  t(", lo que coincide con el hallazgo de la literatura de que más de la mitad del malware exhibe múltiples comportamientos [1]. La Tabla 3 detalla esta co-ocurrencia."),
+]));
+
+// Tabla 3: co-ocurrencia
+{
+  const w = [Math.round(CONTENT_W*0.40), Math.round(CONTENT_W*0.30), Math.round(CONTENT_W*0.30)];
+  const co = [["0 vectores", "53", "2,75 %"], ["1 vector", "944", "49,01 %"],
+    ["2 vectores", "432", "22,43 %"], ["3 vectores", "318", "16,51 %"],
+    ["4 vectores", "160", "8,31 %"], ["5 vectores", "15", "0,78 %"],
+    ["6 vectores", "4", "0,21 %"]];
+  children.push(makeTable(w, ["Vectores simultáneos", "Paquetes", "%"], co,
+    [{}, { align: AlignmentType.CENTER }, { align: AlignmentType.CENTER }]));
+  children.push(caption("Tabla 3. Co-ocurrencia de vectores por paquete en el corpus analizado."));
+}
+
+children.push(p(t("El desglose de las llamadas peligrosas detectadas por el recorrido AST refuerza el predominio del vector V4 y aporta evidencia concreta de los mecanismos empleados (Tabla 4).")));
+
+// Tabla 4: top llamadas peligrosas
+{
+  const w = [Math.round(CONTENT_W*0.55), Math.round(CONTENT_W*0.45)];
+  const calls = [["subprocess.Popen", "972"], ["exec", "260"], ["base64.b64decode", "243"],
+    ["requests.get", "237"], ["os.system", "172"], ["urllib.request.urlopen", "163"],
+    ["__import__", "115"], ["base64.b64encode", "99"], ["socket.socket", "93"],
+    ["subprocess.run", "71"], ["eval", "52"], ["subprocess.call", "50"],
+    ["compile", "41"], ["pickle.loads", "21"], ["os.popen", "14"]];
+  children.push(makeTable(w, ["Llamada peligrosa", "Ocurrencias"], calls,
+    [{}, { align: AlignmentType.CENTER }]));
+  children.push(caption("Tabla 4. Llamadas peligrosas más frecuentes detectadas por el recorrido AST."));
+}
+
+children.push(h2("3.2 Contraste con la literatura e implicación de diseño"));
+children.push(p(t("Los resultados propios concuerdan con la literatura en el panorama general —predominio de la ejecución de código, la exfiltración por red y el typosquatting, y alta co-ocurrencia de vectores— con una diferencia de énfasis esperable: al medir directamente las llamadas del código, la ejecución de comandos (V4) aparece como la señal más frecuente, mientras que los estudios que clasifican por momento de activación resaltan la instalación. Ambas visiones son complementarias y no contradictorias.")));
+children.push(p([
   t("De este panorama se desprende una implicación de diseño directa: "),
   t("un detector para PyPI no puede limitarse a una sola señal.", { bold: true }),
-  t(" Dado que los paquetes combinan vectores y que la instalación es el momento crítico, el sistema debe cubrir simultáneamente la suplantación de nombres, la lógica de instalación, la ofuscación, la ejecución de comandos, la deserialización insegura, la codificación y los indicios de red. Esta cobertura múltiple es precisamente lo que fundamenta el conjunto de requerimientos funcionales de la Sección 4."),
+  t(" Dado que los paquetes combinan vectores y que la instalación es un momento crítico, el sistema debe cubrir simultáneamente la suplantación de nombres, la lógica de instalación, la ofuscación, la ejecución de comandos, la deserialización insegura, la codificación y los indicios de red. Esta cobertura múltiple es precisamente lo que fundamenta el conjunto de requerimientos funcionales de la Sección 4."),
 ]));
 
 // 4. Requerimientos
@@ -186,7 +230,7 @@ children.push(p(t("Cada requerimiento funcional responde a uno o más vectores d
   ];
   children.push(makeTable(w, ["ID", "Requerimiento funcional", "Vector(es)"], rows,
     [{ align: AlignmentType.CENTER, bold: true }, {}, { align: AlignmentType.CENTER }]));
-  children.push(caption("Tabla 3. Requerimientos funcionales y su trazabilidad a los vectores de ataque."));
+  children.push(caption("Tabla 5. Requerimientos funcionales y su trazabilidad a los vectores de ataque."));
 }
 
 children.push(h2("4.2 Requerimientos no funcionales (ISO/IEC 25010:2023)"));
@@ -195,7 +239,7 @@ children.push(p(t("Los requerimientos no funcionales se organizan según las cua
   const w = [Math.round(CONTENT_W*0.09), Math.round(CONTENT_W*0.24), Math.round(CONTENT_W*0.51), Math.round(CONTENT_W*0.16)];
   const rows = [
     ["RNF01", "Adecuación funcional — Completitud funcional", "El sistema debe cubrir la detección de los siete vectores de ataque identificados (V1–V7).", "7/7 vectores"],
-    ["RNF02", "Adecuación funcional — Corrección funcional", "El clasificador debe alcanzar Recall ≥ 0,90 y F1 ≥ 0,85, con una tasa de falsos positivos ≤ 10 %.", "Recall, F1, FP"],
+    ["RNF02", "Adecuación funcional — Corrección funcional", "El clasificador debe alcanzar Recall ≥ 0,90 y F1 ≥ 0,85, con una tasa de falsos positivos ≤ 10 %. Verificado: Recall 0,971, F1 0,975, FP 2,3 % en hold-out.", "Recall, F1, FP"],
     ["RNF03", "Adecuación funcional — Pertinencia funcional", "El veredicto debe emitirse mediante aprendizaje automático supervisado, no mediante umbrales fijos.", "Decisión ML"],
     ["RNF04", "Eficiencia de desempeño — Comportamiento temporal", "El análisis completo de un paquete no debe superar 120 segundos.", "≤ 120 s/paquete"],
     ["RNF05", "Eficiencia de desempeño — Utilización de recursos", "El consumo de memoria durante el análisis no debe superar 2 GB.", "≤ 2 GB RAM"],
@@ -209,12 +253,12 @@ children.push(p(t("Los requerimientos no funcionales se organizan según las cua
   ];
   children.push(makeTable(w, ["ID", "Característica ISO/IEC 25010:2023", "Requerimiento no funcional", "Métrica"], rows,
     [{ align: AlignmentType.CENTER, bold: true }, {}, {}, { align: AlignmentType.CENTER }]));
-  children.push(caption("Tabla 4. Requerimientos no funcionales mapeados a las características de ISO/IEC 25010:2023 [6]."));
+  children.push(caption("Tabla 6. Requerimientos no funcionales mapeados a las características de ISO/IEC 25010:2023 [6]."));
 }
 
 // 5. Trazabilidad
 children.push(h1("5. Matriz de trazabilidad"));
-children.push(p(t("La Tabla 5 sintetiza la cadena de justificación completa: desde la amenaza observada en PyPI hasta la característica de calidad que la gobierna. Esta trazabilidad permite verificar que ningún requerimiento carece de fundamento y que ninguna amenaza relevante quedó sin cubrir.")));
+children.push(p(t("La Tabla 7 sintetiza la cadena de justificación completa: desde la amenaza observada en PyPI hasta la característica de calidad que la gobierna. Esta trazabilidad permite verificar que ningún requerimiento carece de fundamento y que ninguna amenaza relevante quedó sin cubrir.")));
 {
   const w = [Math.round(CONTENT_W*0.34), Math.round(CONTENT_W*0.22), Math.round(CONTENT_W*0.44)];
   const rows = [
@@ -229,12 +273,25 @@ children.push(p(t("La Tabla 5 sintetiza la cadena de justificación completa: de
     ["Robustez y desempeño", "RF01", "Eficiencia; Fiabilidad (RNF04–RNF09)"],
   ];
   children.push(makeTable(w, ["Vector / aspecto", "Requerimientos funcionales", "Característica ISO/IEC 25010:2023"], rows));
-  children.push(caption("Tabla 5. Matriz de trazabilidad vector → requerimiento funcional → característica de calidad."));
+  children.push(caption("Tabla 7. Matriz de trazabilidad vector → requerimiento funcional → característica de calidad."));
 }
 
-// 6. Conclusión
-children.push(h1("6. Conclusión del objetivo"));
-children.push(p(t("El análisis de la evidencia empírica y del corpus propio permite concluir que los ataques a PyPI se concentran en la ejecución durante la instalación y en la suplantación de nombres, y que tienden a combinar varios vectores en un mismo paquete. Este hallazgo justifica un detector de cobertura múltiple, cuya decisión final recae en un clasificador supervisado. Los once requerimientos funcionales y los doce requerimientos no funcionales derivados quedan trazados a los vectores observados y a las cuatro características del modelo ISO/IEC 25010:2023 seleccionadas, de modo que el diseño del MVP responde a amenazas reales y su calidad puede verificarse con métricas objetivas. Con ello se cumple el primer objetivo específico y se establece la base para el diseño e implementación abordados en los objetivos siguientes.")));
+// 6. Amenazas a la validez
+children.push(h1("6. Amenazas a la validez"));
+children.push(p([
+  t("El análisis de la importancia de características del clasificador entrenado reveló una dependencia elevada de las señales de nombre: "),
+  t("la distancia mínima de nombre (0,62) y el indicador de typosquatting (0,15) concentran cerca del 77 % de la importancia", { bold: true }),
+  t(". Esto se explica por la composición del conjunto de datos: los paquetes benignos provienen del Top de PyPI, que coincide con la lista de referencia usada para medir la similitud de nombres, por lo que su distancia tiende a cero; en cambio, los maliciosos —muchos de ellos typosquats— presentan distancias mayores. El modelo puede así aprender una diferencia parcialmente artificial del dataset (fuga de datos) en lugar de una señal de malicia intrínseca."),
+]));
+children.push(p([
+  t("Esta amenaza no invalida los resultados —los KPI se cumplen con holgura— pero acota su interpretación y motiva un trabajo de robustez: "),
+  t("incorporar paquetes benignos poco populares y fuera de la lista de referencia, y evaluar el modelo excluyendo las características de nombre", { bold: true }),
+  t(", para confirmar que las señales de código (ejecución, red, instalación) aportan capacidad discriminante por sí mismas. Se documenta como línea de mejora para las siguientes iteraciones del MVP."),
+]));
+
+// 7. Conclusión
+children.push(h1("7. Conclusión del objetivo"));
+children.push(p(t("El análisis empírico sobre 1.926 paquetes maliciosos reales, contrastado con la literatura, permite concluir que los ataques a PyPI se concentran en la ejecución de comandos y código (76,3 %), la exfiltración por red (42,0 %) y la suplantación de nombres (26,0 %), y que tienden a combinar varios vectores: el 48,2 % de las muestras presentó dos o más. Este hallazgo, respaldado por datos propios, justifica un detector de cobertura múltiple cuya decisión final recae en un clasificador supervisado. Los once requerimientos funcionales y los doce requerimientos no funcionales derivados quedan trazados a los vectores observados y a las cuatro características del modelo ISO/IEC 25010:2023 seleccionadas. La corrección funcional exigida (RNF02) se verificó posteriormente: el modelo alcanzó Recall 0,971, F1 0,975 y una tasa de falsos positivos de 2,3 % en el conjunto de hold-out, cumpliendo con holgura las metas del proyecto. Con ello se cumple el primer objetivo específico y se establece una base fundamentada para el diseño e implementación abordados en los objetivos siguientes.")));
 
 // Referencias
 children.push(h1("Referencias"));

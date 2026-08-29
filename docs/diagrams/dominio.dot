@@ -1,0 +1,16 @@
+digraph G {
+  rankdir=LR; bgcolor="white";
+  node [shape=record fontname="Arial" fontsize=9 style="filled" color="#1F3864" fillcolor="#EAF0FB"];
+  edge [fontname="Arial" fontsize=8 color="#555555" arrowhead=vee];
+
+  Package [label="{Package|name : str\lversion : str\lauthor : str?\lupload_date : datetime?\lsha256 : str?\l}"];
+  Meta [label="{PackageMetadata|author_email : str?\lproject_urls : dict\lreleases : list\lrequires_dist : list\lhas_long_description : bool\l}"];
+  Ent [label="{EntropyReport|max : float\lmean : float\lstd : float\lsuspicious_windows : int\l}"];
+  AST [label="{ASTReport|dangerous_calls : list\limports : list\lnetwork_literals : list\lhas_install_hook : bool\l}"];
+  Typo [label="{TyposquatReport|min_distance : int?\lsimilar_package : str?\lis_typosquat : bool\lhas_combo_affix : bool\l}"];
+  FV [label="{FeatureVector|14 características\lnuméricas\l(to_row)\l}"];
+  ML [label="{MLPrediction|score : float\lverdict : Verdict\lfeature_importance : dict\l}"];
+  SR [label="{ScanReport|package\lmetadata / typosquat\lentropy / ast\lfeatures / prediction\lerrors : list\l(to_json)\l}" fillcolor="#D9E2F3"];
+
+  SR -> Package; SR -> Meta; SR -> Ent; SR -> AST; SR -> Typo; SR -> FV; SR -> ML;
+}

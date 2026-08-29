@@ -1,0 +1,19 @@
+digraph G {
+  rankdir=TB; bgcolor="white";
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 color="#1F3864" fillcolor="#D9E2F3"];
+  edge [fontname="Arial" fontsize=9 color="#555555"];
+
+  DS [label="Dataset etiquetado\n(benignos + maliciosos, dedup sha256)", fillcolor="#BDD7EE"];
+  FE [label="Extracción de características\n(3 extractores → FeatureVector)\ncaché por sha256"];
+  KF [label="Validación cruzada estratificada\n(StratifiedKFold, k=5)"];
+  SM [label="SMOTE\n(solo en cada fold de entrenamiento)"];
+  TR [label="Entrenamiento\nRandomForest (class_weight) /\nXGBoost (scale_pos_weight)"];
+  OOF [label="Predicciones out-of-fold"];
+  TH [label="Ajuste de umbral\n(máx. F1 sujeto a Recall ≥ 0,90)"];
+  SEL [label="Selección del mejor modelo"];
+  HO [label="Evaluación en hold-out\n(umbral fijo)"];
+  OUT [label="model.joblib + metrics.json", fillcolor="#BDD7EE"];
+
+  DS -> FE -> KF -> SM -> TR -> OOF -> TH -> SEL;
+  SEL -> HO -> OUT;
+}

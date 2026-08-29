@@ -1,0 +1,30 @@
+digraph G {
+  rankdir=TB; bgcolor="white";
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 color="#1F3864" fillcolor="#D9E2F3" penwidth=1.2];
+  edge [fontname="Arial" fontsize=9 color="#555555"];
+  labelloc="t"; fontname="Arial"; fontsize=13;
+
+  CLI [label="CLI (Typer)\nscan · check-name · info", fillcolor="#BDD7EE"];
+  Fetcher [label="Fetcher seguro\n(descarga PyPI + extracción\nanti Zip-Slip / zip-bomb)"];
+
+  subgraph cluster_ext {
+    label="Extractores (filtros independientes)"; style="rounded,dashed"; color="#1F3864"; fontname="Arial"; fontsize=10;
+    Meta [label="MetadataExtractor\n(typosquatting/Levenshtein)"];
+    Ent [label="EntropyExtractor\n(entropía de Shannon)"];
+    AST [label="ASTExtractor\n(recorrido AST)"];
+  }
+
+  FB [label="Feature Builder\n(consolida → FeatureVector)"];
+  Clf [label="Classifier\n(RandomForest / XGBoost)"];
+  Rep [label="Reporte\nJSON · SARIF 2.1.0", fillcolor="#BDD7EE"];
+
+  Config [label="config.py\n(umbrales, rutas)", shape=note fillcolor="#FFF2CC" color="#BF9000"];
+  Models [label="models.py\n(entidades Pydantic)", shape=note fillcolor="#FFF2CC" color="#BF9000"];
+
+  CLI -> Fetcher -> Meta;
+  Fetcher -> Ent; Fetcher -> AST;
+  Meta -> FB; Ent -> FB; AST -> FB;
+  FB -> Clf -> Rep;
+  Config -> Fetcher [style=dashed arrowhead=none];
+  Models -> FB [style=dashed arrowhead=none];
+}

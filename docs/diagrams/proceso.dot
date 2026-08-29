@@ -1,0 +1,14 @@
+digraph G {
+  rankdir=TB; bgcolor="white";
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 color="#1F3864" fillcolor="#D9E2F3" penwidth=1.2];
+  edge [fontname="Arial" fontsize=9 color="#555555"];
+
+  F1 [label="Fase 1 — Diseño del método\nExtractores estáticos +\nscript analyze_attack_vectors.py"];
+  F2 [label="Fase 2 — Entorno seguro\nMáquina virtual aislada\n(VirtualBox + Ubuntu)"];
+  F3 [label="Fase 3 — Adquisición de datos\nDataDog + PyPI Malregistry\n+ benignos del Top de PyPI"];
+  F4 [label="Fase 4 — Construcción del dataset\nImportación · deduplicación\n· balanceo · división 80/20"];
+  F5 [label="Fase 5 — Análisis y resultados\nEjecución del script →\nfrecuencias de vectores"];
+  R [label="Resultados del Objetivo 1\n7 vectores cuantificados\n(1.926 muestras)", fillcolor="#BDD7EE"];
+
+  F1 -> F2 -> F3 -> F4 -> F5 -> R;
+}

@@ -1,0 +1,19 @@
+digraph G {
+  rankdir=LR; bgcolor="white";
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=10 color="#1F3864" fillcolor="#D9E2F3"];
+  edge [fontname="Arial" fontsize=9 color="#555555"];
+
+  In [label="Nombre del\npaquete", shape=ellipse fillcolor="#BDD7EE"];
+  Fetch [label="Descarga sdist\n+ verifica sha256\n+ extrae seguro"];
+  Meta [label="Reporte\nmetadatos"];
+  Ent [label="Reporte\nentropía"];
+  AST [label="Reporte\nAST"];
+  FV [label="FeatureVector\n(14 características)"];
+  ML [label="MLPrediction\n(score + veredicto)"];
+  Out [label="ScanReport\nJSON / SARIF", shape=ellipse fillcolor="#BDD7EE"];
+
+  In -> Fetch;
+  Fetch -> Meta; Fetch -> Ent; Fetch -> AST;
+  Meta -> FV; Ent -> FV; AST -> FV;
+  FV -> ML -> Out;
+}
