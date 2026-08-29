@@ -1,0 +1,14 @@
+digraph G {
+  rankdir=TB; bgcolor="white";
+  node [shape=box style="rounded,filled" fontname="Arial" fontsize=11 color="#1F3864" fillcolor="#D9E2F3" penwidth=1.2];
+  edge [fontname="Arial" fontsize=9 color="#555555"];
+
+  F1 [label="Fase 1 — Análisis de requerimientos\n(entradas del Objetivo 1:\nvectores + RF/RNF)"];
+  F2 [label="Fase 2 — Selección del estilo\narquitectónico\n(monolito modular + Pipes and Filters)"];
+  F3 [label="Fase 3 — Componentes y contratos\n(módulos + interfaces Pydantic)"];
+  F4 [label="Fase 4 — Diseño del modelo de ML\n(features, algoritmo, desbalance,\nevaluación)"];
+  F5 [label="Fase 5 — Verificación del diseño\n(trazabilidad diseño ↔ requerimientos)"];
+  R [label="Arquitectura del MVP y del modelo\n(vistas + stack + trazabilidad)", fillcolor="#BDD7EE"];
+
+  F1 -> F2 -> F3 -> F4 -> F5 -> R;
+}

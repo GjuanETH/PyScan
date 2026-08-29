@@ -120,20 +120,32 @@ children.push(p(t("La Figura 2 describe el comportamiento dinámico durante un a
 children.push(figure("flujo.png", 1569, 317, 540));
 children.push(caption("Figura 2. Vista de flujo de datos de un análisis (scan)."));
 
-// 5. Modelo de dominio
-children.push(h1("5. Modelo de dominio"));
-children.push(p(t("Las interfaces entre módulos se definen con modelos tipados de Pydantic, lo que valida los datos que viajan por la tubería y permite probar cada módulo en aislamiento (RNF11, RNF12). La Figura 3 presenta las entidades principales. ScanReport actúa como agregador del resultado: contiene el paquete, sus metadatos y los reportes de cada extractor, el vector de características y la predicción del modelo, además de una lista de errores para la degradación elegante.")));
-children.push(figure("dominio.png", 898, 956, 430));
-children.push(caption("Figura 3. Modelo de dominio (entidades Pydantic)."));
+// 5. Vista dinámica (secuencia)
+children.push(h1("5. Vista dinámica (secuencia de un escaneo)"));
+children.push(p(t("Mientras la vista de flujo de datos describe qué transforma cada etapa, la vista dinámica muestra el orden temporal de las interacciones entre los componentes durante la ejecución del comando scan. La Figura 3 presenta ese diagrama de secuencia. El usuario invoca el CLI, que delega en el Fetcher la obtención del paquete desde PyPI; tras verificar la integridad y extraer el código de forma segura, los extractores producen sus reportes, el modelo consolida el vector de características y emite el veredicto, y finalmente el CLI serializa el reporte y devuelve el resultado con su código de salida. La secuencia evidencia que ningún componente ejecuta el código del paquete y que el control retorna siempre al CLI, que actúa como orquestador.")));
+children.push(figure("secuencia.png", 1785, 1110, 540));
+children.push(caption("Figura 3. Vista dinámica: diagrama de secuencia de un escaneo (scan)."));
 
-// 6. Arquitectura del modelo de ML
-children.push(h1("6. Arquitectura del modelo de Machine Learning"));
+// 6. Vista de despliegue
+children.push(h1("6. Vista de despliegue"));
+children.push(p(t("La vista de despliegue describe dónde se ejecuta el sistema y cómo se relaciona con los elementos externos. La Figura 4 la resume. pyscan se ejecuta como una herramienta de línea de comandos en el equipo del desarrollador o en un agente de integración continua, sobre un entorno virtual de Python. En tiempo de ejecución consulta la API de PyPI por HTTPS para descargar los artefactos, carga el modelo entrenado (model.joblib) desde el disco local y genera un reporte en formato JSON o SARIF. Ese reporte, junto con el código de salida, puede ser consumido por un pipeline de Azure DevOps para integrar la detección en el flujo de CI/CD. El sistema no requiere servidores ni servicios propios: su despliegue es autónomo y liviano, coherente con la naturaleza de un MVP de línea de comandos.")));
+children.push(figure("despliegue.png", 1258, 401, 540));
+children.push(caption("Figura 4. Vista de despliegue del sistema."));
+
+// 7. Modelo de dominio
+children.push(h1("7. Modelo de dominio"));
+children.push(p(t("Las interfaces entre módulos se definen con modelos tipados de Pydantic, lo que valida los datos que viajan por la tubería y permite probar cada módulo en aislamiento (RNF11, RNF12). La Figura 5 presenta las entidades principales. ScanReport actúa como agregador del resultado: contiene el paquete, sus metadatos y los reportes de cada extractor, el vector de características y la predicción del modelo, además de una lista de errores para la degradación elegante.")));
+children.push(figure("dominio.png", 898, 956, 430));
+children.push(caption("Figura 5. Modelo de dominio (entidades Pydantic)."));
+
+// 8. Arquitectura del modelo de ML
+children.push(h1("8. Arquitectura del modelo de Machine Learning"));
 children.push(p(t("El componente de decisión es un clasificador supervisado binario (benigno/malicioso). Su diseño abarca la ingeniería de características, la elección del algoritmo y el proceso de entrenamiento y evaluación, todos condicionados por dos hechos del dominio: el fuerte desbalance de clases (el malware es minoritario) y la prioridad del Recall (no dejar pasar paquetes maliciosos), conforme al RNF02.")));
 
-children.push(h2("6.1 Ingeniería de características"));
+children.push(h2("8.1 Ingeniería de características"));
 children.push(p(t("Los tres extractores producen un vector de catorce características numéricas que resume las señales de los vectores de ataque: distancia mínima de nombre e indicadores de typosquatting/combosquatting; conteos de releases, dependencias y presencia de descripción; estadísticos de entropía; y conteos de llamadas peligrosas, literales de red y hook de instalación. Al operar sobre un vector numérico compacto —y no sobre el código crudo— el clasificador es rápido y liviano, apoyando los RNF de eficiencia (RNF04, RNF05).")));
 
-children.push(h2("6.2 Algoritmos y manejo del desbalance"));
+children.push(h2("8.2 Algoritmos y manejo del desbalance"));
 children.push(p([
   t("Se evalúan dos algoritmos de ensamble basados en árboles, robustos frente a características heterogéneas y de rápida inferencia: "),
   t("Random Forest", { bold: true }),
@@ -144,13 +156,13 @@ children.push(p([
   t(", nunca sobre los datos de validación, evitando la fuga de información."),
 ]));
 
-children.push(h2("6.3 Pipeline de entrenamiento y evaluación"));
-children.push(p(t("La Figura 4 resume el proceso. Sobre el dataset etiquetado y deduplicado por sha256, se extraen las características (con caché por hash para no repetir trabajo). Se emplea validación cruzada estratificada de cinco particiones que produce predicciones out-of-fold; sobre ellas se ajusta el umbral de decisión maximizando el F1 sujeto a un Recall mínimo de 0,90. Se selecciona el mejor algoritmo, se reentrena con todo el conjunto y se evalúa una sola vez en un hold-out con el umbral ya fijado, obteniendo una estimación honesta del desempeño. El artefacto resultante (model.joblib) empaqueta el modelo, el orden de las características y el umbral, junto a un informe de métricas.")));
+children.push(h2("8.3 Pipeline de entrenamiento y evaluación"));
+children.push(p(t("La Figura 6 resume el proceso. Sobre el dataset etiquetado y deduplicado por sha256, se extraen las características (con caché por hash para no repetir trabajo). Se emplea validación cruzada estratificada de cinco particiones que produce predicciones out-of-fold; sobre ellas se ajusta el umbral de decisión maximizando el F1 sujeto a un Recall mínimo de 0,90. Se selecciona el mejor algoritmo, se reentrena con todo el conjunto y se evalúa una sola vez en un hold-out con el umbral ya fijado, obteniendo una estimación honesta del desempeño. El artefacto resultante (model.joblib) empaqueta el modelo, el orden de las características y el umbral, junto a un informe de métricas.")));
 children.push(figure("ml_pipeline.png", 406, 1462, 250));
-children.push(caption("Figura 4. Arquitectura del pipeline de entrenamiento y evaluación del modelo."));
+children.push(caption("Figura 6. Arquitectura del pipeline de entrenamiento y evaluación del modelo."));
 
-// 7. Stack tecnológico
-children.push(h1("7. Stack tecnológico"));
+// 9. Stack tecnológico
+children.push(h1("9. Stack tecnológico"));
 children.push(p(t("La Tabla 1 justifica cada tecnología en función de los requerimientos que soporta.")));
 {
   const w = [Math.round(CONTENT_W*0.24), Math.round(CONTENT_W*0.50), Math.round(CONTENT_W*0.26)];
@@ -168,8 +180,8 @@ children.push(p(t("La Tabla 1 justifica cada tecnología en función de los requ
   children.push(caption("Tabla 1. Stack tecnológico y su trazabilidad a los requerimientos."));
 }
 
-// 8. Trazabilidad diseño-requerimientos
-children.push(h1("8. Trazabilidad diseño ↔ requerimientos"));
+// 10. Trazabilidad diseño-requerimientos
+children.push(h1("10. Trazabilidad diseño ↔ requerimientos"));
 children.push(p(t("La Tabla 2 verifica que cada decisión arquitectónica responde a requerimientos concretos del Objetivo 1, cerrando la cadena requerimiento → diseño.")));
 {
   const w = [Math.round(CONTENT_W*0.34), Math.round(CONTENT_W*0.40), Math.round(CONTENT_W*0.26)];
@@ -186,8 +198,8 @@ children.push(p(t("La Tabla 2 verifica que cada decisión arquitectónica respon
   children.push(caption("Tabla 2. Trazabilidad entre decisiones de diseño y requerimientos."));
 }
 
-// 9. Conclusión
-children.push(h1("9. Conclusión del objetivo"));
+// 11. Conclusión
+children.push(h1("11. Conclusión del objetivo"));
 children.push(p(t("El diseño propuesto estructura lógicamente el sistema de detección en componentes de responsabilidad única, articulados por un flujo de datos unidireccional y tipado, con un componente de decisión basado en Machine Learning cuyo pipeline de entrenamiento controla explícitamente el desbalance de clases y la fuga de datos. Cada decisión arquitectónica y tecnológica queda trazada a los requerimientos funcionales y no funcionales del Objetivo 1 y, a través de ellos, a las características de calidad de ISO/IEC 25010:2023. Con ello se cumple el segundo objetivo específico y se dispone de una arquitectura verificable que guía la implementación abordada en los objetivos siguientes.")));
 
 // Referencias
