@@ -44,9 +44,12 @@ from pyscan.models import FeatureVector, Verdict  # noqa: E402
 import train_model as tm  # noqa: E402
 
 OUT_DIR = config.DATA_DIR / "analysis"
+_GUARDDOG_BIN = ""  # ruta al binario de GuardDog (se fija desde --guarddog-bin)
 
 
 def _guarddog_cmd() -> list[str]:
+    if _GUARDDOG_BIN:
+        return [_GUARDDOG_BIN]
     if shutil.which("guarddog"):
         return ["guarddog"]
     return [sys.executable, "-m", "guarddog"]
@@ -92,7 +95,13 @@ def main() -> int:
     ap.add_argument("--from-csv", type=Path, default=None,
                     help="manifiesto a usar (por defecto data/holdout.csv)")
     ap.add_argument("--sandbox", action="store_true", help="no pasar --no-sandbox a GuardDog")
+    ap.add_argument("--guarddog-bin", default="",
+                    help="ruta al binario de guarddog (p. ej. ~/.local/bin/guarddog)")
     args = ap.parse_args()
+
+    global _GUARDDOG_BIN
+    if args.guarddog_bin:
+        _GUARDDOG_BIN = str(Path(args.guarddog_bin).expanduser())
 
     manifest = args.from_csv or (config.DATA_DIR / "holdout.csv")
     if not manifest.exists():
