@@ -41,14 +41,37 @@ def _report_dict(report: ScanReport, note) -> dict:
     r = {"package": report.package.name, "version": report.package.version,
          "verdict": "sin modelo", "score": None, "reasons": [], "error": None,
          "features": None}
+    r["detail"] = None
     if report.features is not None:
         r["features"] = {k: round(float(v), 3)
                          for k, v in report.features.model_dump().items()}
+
+    def _uniq(seq, n):
+        return list(dict.fromkeys(seq))[:n]
+
+    # Evidencia concreta (qué, cuál, de dónde) para desglosar el veredicto.
+    det = {"dangerous_calls": [], "network_literals": [], "imports": [],
+           "install_hook": False, "typosquat_of": None, "typosquat_distance": None,
+           "entropy_max": None, "entropy_suspicious_windows": 0}
+    if report.ast:
+        det["dangerous_calls"] = _uniq(report.ast.dangerous_calls, 30)
+        det["network_literals"] = _uniq(report.ast.network_literals, 30)
+        det["imports"] = _uniq(report.ast.imports, 40)
+        det["install_hook"] = bool(report.ast.has_install_hook)
+    if report.typosquat and report.typosquat.is_typosquat:
+        det["typosquat_of"] = report.typosquat.similar_package
+        det["typosquat_distance"] = report.typosquat.min_distance
+    if report.entropy:
+        det["entropy_max"] = round(report.entropy.max, 2)
+        det["entropy_suspicious_windows"] = report.entropy.suspicious_windows
+    r["detail"] = det
+
     if report.errors:
         if report.typosquat and report.typosquat.is_typosquat:
             r["verdict"] = "sospechoso"
             r["reasons"].append(
-                f"nombre similar a '{report.typosquat.similar_package}' (posible typosquatting)")
+                f"nombre similar a '{report.typosquat.similar_package}' "
+                f"(posible typosquatting)")
             r["reasons"].append("paquete no disponible en PyPI")
             return r
         r["verdict"] = "error"; r["error"] = report.errors[0]; return r
@@ -58,14 +81,18 @@ def _report_dict(report: ScanReport, note) -> dict:
         r["score"] = round(report.prediction.score, 3)
     if report.typosquat and report.typosquat.is_typosquat:
         r["reasons"].append(f"typosquat de '{report.typosquat.similar_package}'")
-    if report.ast and report.ast.has_install_hook:
-        r["reasons"].append("hook de instalación")
-    if report.ast and report.ast.dangerous_calls:
-        r["reasons"].append(f"{len(report.ast.dangerous_calls)} llamadas peligrosas")
-    if report.ast and report.ast.network_literals:
-        r["reasons"].append(f"{len(report.ast.network_literals)} literales de red")
-    if report.entropy and report.entropy.suspicious_windows:
-        r["reasons"].append(f"{report.entropy.suspicious_windows} ventanas de entropía alta")
+    if det["install_hook"]:
+        r["reasons"].append("hook de instalación (ejecuta código al instalar)")
+    if det["dangerous_calls"]:
+        shown = ", ".join(det["dangerous_calls"][:3])
+        extra = f" +{len(det['dangerous_calls']) - 3}" if len(det["dangerous_calls"]) > 3 else ""
+        r["reasons"].append(f"llamadas peligrosas: {shown}{extra}")
+    if det["network_literals"]:
+        shown = ", ".join(det["network_literals"][:2])
+        extra = f" +{len(det['network_literals']) - 2}" if len(det["network_literals"]) > 2 else ""
+        r["reasons"].append(f"conexiones/URLs: {shown}{extra}")
+    if det["entropy_suspicious_windows"]:
+        r["reasons"].append(f"{det['entropy_suspicious_windows']} ventanas de entropía alta")
     return r
 
 
@@ -222,6 +249,11 @@ td{padding:10px 12px;border-top:1px solid #eef1f7;font-size:14px;vertical-align:
 .feat td.muted{color:#8a90a0;font-size:12px;}
 .feat tr.on td{background:#fdecea;}
 .feat tr.on td:first-child{color:#c0392b;font-weight:700;}
+.why{font-size:13.5px;color:#33415c;margin:2px 0 10px;line-height:1.5;}
+.ev{margin:0 0 6px;padding-left:18px;font-size:13px;color:#3a3a3a;}
+.ev li{margin:6px 0;line-height:1.5;}
+.chip{display:inline-block;background:#eef1f7;color:#33415c;border-radius:6px;padding:2px 7px;margin:2px 3px 2px 0;font-family:Consolas,monospace;font-size:12px;word-break:break-all;}
+.chip.bad{background:#fdecea;color:#b0331f;}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .panel{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
 .panel h3{margin:0 0 12px;color:var(--navy);font-size:15px;}
@@ -267,8 +299,9 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
        <div class="sub">Cómo se repartió lo que analizaste (benigno / sospechoso / malicioso).</div>
        <canvas id="chVerdict" height="220"></canvas></div>
      <div class="panel"><h3>Señales más frecuentes en lo analizado</h3>
-       <div class="sub">Cuántos de tus paquetes activaron cada señal de riesgo.</div>
-       <canvas id="chSignals" height="220"></canvas></div>
+       <div class="sub">Cuántos de tus paquetes activaron cada señal, y de qué paquetes vienen.</div>
+       <canvas id="chSignals" height="220"></canvas>
+       <div id="signalsBreak" style="margin-top:10px"></div></div>
    </div>
    <div class="panel" style="margin-top:18px"><h3>Historial de la sesión</h3>
      <div class="sub">Todo lo que has analizado desde que abriste la página. Descárgalo como evidencia o para un pipeline.</div>
@@ -365,24 +398,54 @@ function fActive(k,v){
   return v>=1;}
 function badge(v){const m={'MALICIOSO':'mal','benigno':'ben','sospechoso':'sus','sin modelo':'non','error':'err'};
   return '<span class="badge '+(m[v]||'non')+'">'+v+'</span>';}
-function detailRows(f){
-  if(!f)return '<i>Sin señales (el paquete no pudo analizarse).</i>';
-  let h='<table class="feat"><tr><th>Señal</th><th>Valor</th><th>Qué significa</th></tr>';
-  for(const k in FEAT){const v=f[k],a=fActive(k,v);
-    h+='<tr class="'+(a?'on':'')+'"><td>'+(a?'⚑ ':'')+FEAT[k].l+'</td><td>'+v+'</td><td class="muted">'+FEAT[k].d+'</td></tr>';}
-  return h+'</table><div class="sub" style="margin-top:6px">⚑ = señal activa que contribuyó al veredicto.</div>';}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+function chips(arr,cls){return arr.map(x=>'<span class="chip '+(cls||'')+'">'+esc(x)+'</span>').join(' ');}
+function whyText(r){
+  if(r.verdict==='MALICIOSO')return 'El modelo lo clasificó <b>MALICIOSO</b> (score '+r.score+'). Encontró la combinación de señales típica del malware:';
+  if(r.verdict==='benigno')return 'El modelo lo clasificó <b>benigno</b> (score '+r.score+'). No presenta la combinación de señales del malware: sin typosquatting ni hook de instalación; las llamadas o conexiones que tenga son las normales de una librería legítima.';
+  if(r.verdict==='sospechoso')return 'Marcado <b>sospechoso</b> por el nombre, antes incluso de analizar el código:';
+  return 'Se muestran las señales encontradas (sin modelo entrenado no hay veredicto):';
+}
+function detailRows(r){
+  const f=r.features, det=r.detail||{};
+  let h='<div class="why">'+whyText(r)+'</div>';
+  // Evidencia concreta desmenuzada
+  const ev=[];
+  if(det.typosquat_of)ev.push('<b>Suplanta el nombre</b> de <code>'+esc(det.typosquat_of)+'</code>'+
+    (det.typosquat_distance!=null?' (distancia '+det.typosquat_distance+')':''));
+  if(det.install_hook)ev.push('<b>Hook de instalación:</b> ejecuta código al instalar (setup.py)');
+  if(det.dangerous_calls&&det.dangerous_calls.length)
+    ev.push('<b>Llamadas peligrosas ('+det.dangerous_calls.length+'):</b><br>'+chips(det.dangerous_calls,'bad'));
+  if(det.network_literals&&det.network_literals.length)
+    ev.push('<b>Conexiones / URLs ('+det.network_literals.length+'):</b><br>'+chips(det.network_literals,'bad'));
+  if(det.entropy_suspicious_windows)
+    ev.push('<b>Entropía alta:</b> '+det.entropy_suspicious_windows+' ventana(s) sospechosa(s) (máx '+det.entropy_max+') → posible ofuscación');
+  if(det.imports&&det.imports.length)
+    ev.push('<b>Imports detectados:</b><br>'+chips(det.imports.slice(0,20)));
+  if(ev.length)h+='<ul class="ev"><li>'+ev.join('</li><li>')+'</li></ul>';
+  else if(r.verdict==='benigno')h+='<div class="sub">No se hallaron señales de riesgo relevantes en el código.</div>';
+  // Tabla de las 9 características del modelo
+  if(f){
+    h+='<div class="sub" style="margin-top:10px"><b>Las 9 características que ve el modelo</b> (⚑ = activa):</div>';
+    h+='<table class="feat"><tr><th>Señal</th><th>Valor</th><th>Qué significa</th></tr>';
+    for(const k in FEAT){const v=f[k],a=fActive(k,v);
+      h+='<tr class="'+(a?'on':'')+'"><td>'+(a?'⚑ ':'')+FEAT[k].l+'</td><td>'+v+'</td><td class="muted">'+FEAT[k].d+'</td></tr>';}
+    h+='</table>';
+  }
+  return h;
+}
 function render(d){
   const mal=d.maliciosos>0;
   document.getElementById('summary').innerHTML='Analizados: '+d.total+' · '+
     '<span style="color:'+(mal?'#c0392b':'#1e8449')+'">'+d.maliciosos+' maliciosos</span>'+
-    '<div class="sub" style="margin-top:4px">Haz clic en una fila para ver por qué el modelo decidió eso.</div>';
+    '<div class="sub" style="margin-top:4px">Haz clic en una fila para ver, desmenuzado, por qué el modelo decidió eso.</div>';
   let h='<table><tr><th>Paquete</th><th>Veredicto</th><th>Score</th><th>Motivos / señales</th></tr>';
-  d.results.forEach((r,i)=>{const can=!!r.features;
+  d.results.forEach((r,i)=>{const can=!!(r.features||r.detail);
     h+='<tr class="row'+(can?' clk':'')+'"'+(can?' onclick="tgl('+i+')"':'')+'>'+
-      '<td>'+(can?'<span class="caret" id="cr'+i+'">▸</span> ':'')+'<b>'+r.package+'</b> '+(r.version||'')+'</td>'+
+      '<td>'+(can?'<span class="caret" id="cr'+i+'">▸</span> ':'')+'<b>'+esc(r.package)+'</b> '+esc(r.version||'')+'</td>'+
       '<td>'+badge(r.verdict)+'</td><td>'+(r.score!=null?r.score:'—')+'</td>'+
-      '<td>'+(r.error?('<i>'+r.error+'</i>'):(r.reasons.join('; ')||'—'))+'</td></tr>';
-    if(can)h+='<tr class="det" id="det'+i+'" style="display:none"><td colspan="4">'+detailRows(r.features)+'</td></tr>';});
+      '<td>'+(r.error?('<i>'+esc(r.error)+'</i>'):(r.reasons.map(esc).join('; ')||'—'))+'</td></tr>';
+    if(can)h+='<tr class="det" id="det'+i+'" style="display:none"><td colspan="4">'+detailRows(r)+'</td></tr>';});
   h+='</table>'; document.getElementById('out').innerHTML=h;
 }
 function tgl(i){const d=document.getElementById('det'+i),c=document.getElementById('cr'+i);
@@ -525,8 +588,13 @@ function renderAnalysis(){
   const counts={}; for(const k in FEAT)counts[k]=0;
   for(const r of history){if(!r.features)continue;
     for(const k in FEAT)if(fActive(k,r.features[k]))counts[k]++;}
+  // paquetes por señal (trazabilidad)
+  const pkgs={}; for(const k in FEAT)pkgs[k]=[];
+  for(const r of history){if(!r.features)continue;
+    for(const k in FEAT)if(fActive(k,r.features[k]))pkgs[k].push(r.package);}
   const ks=Object.keys(FEAT).filter(k=>counts[k]>0).sort((a,b)=>counts[b]-counts[a]);
   if(charts.signals)charts.signals.destroy();
+  const bk=document.getElementById('signalsBreak');
   if(ks.length){
     charts.signals=new Chart(document.getElementById('chSignals'),{type:'bar',
       data:{labels:ks.map(k=>FEAT[k].l),datasets:[{data:ks.map(k=>counts[k]),backgroundColor:'#2E5C9E'}]},
@@ -534,9 +602,14 @@ function renderAnalysis(){
         label:c=>c.parsed.x+' paquete(s)',
         afterLabel:c=>FEAT[ks[c.dataIndex]]?wrap(FEAT[ks[c.dataIndex]].d):[]}}},
         scales:{x:{beginAtZero:true,ticks:{precision:0}}}}});
+    let t='<table class="feat"><tr><th>Señal</th><th>Paquetes que la activaron</th></tr>';
+    for(const k of ks)t+='<tr><td>'+FEAT[k].l+'</td><td class="muted">'+
+      [...new Set(pkgs[k])].map(esc).join(', ')+'</td></tr>';
+    bk.innerHTML=t+'</table>';
   }else{
     const cv=document.getElementById('chSignals');
     cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+    bk.innerHTML='<div class="sub">Escanea paquetes para ver aquí qué señales activan y de dónde vienen.</div>';
   }
 }
 </script></body></html>"""
