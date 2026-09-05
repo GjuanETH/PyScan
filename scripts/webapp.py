@@ -34,6 +34,15 @@ def _report_dict(report: ScanReport, note) -> dict:
     r = {"package": report.package.name, "version": report.package.version,
          "verdict": "sin modelo", "score": None, "reasons": [], "error": None}
     if report.errors:
+        # Aunque no se pueda descargar, el análisis del nombre (offline) puede
+        # detectar typosquatting: se reporta como sospechoso, no como simple error.
+        if report.typosquat and report.typosquat.is_typosquat:
+            r["verdict"] = "sospechoso"
+            r["reasons"].append(
+                f"nombre similar a '{report.typosquat.similar_package}' "
+                f"(posible typosquatting)")
+            r["reasons"].append("paquete no disponible en PyPI")
+            return r
         r["verdict"] = "error"; r["error"] = report.errors[0]; return r
     if report.prediction:
         r["verdict"] = ("MALICIOSO" if report.prediction.verdict == Verdict.MALICIOUS
@@ -138,6 +147,7 @@ td{padding:10px 12px;border-top:1px solid #eef1f7;font-size:14px;vertical-align:
 .ben{background:#e7f4ea;color:#1e8449;}
 .non{background:#eef1f7;color:#5b6472;}
 .err{background:#fff3e0;color:#b9770e;}
+.sus{background:#fdecd7;color:#b9600e;}
 .spin{display:none;margin-top:14px;color:var(--navy);font-weight:600;}
 .note{background:var(--card);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:8px;}
 footer{max-width:960px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:12px;}
@@ -174,7 +184,7 @@ async function scan(){
   }catch(e){document.getElementById('out').innerHTML='<p>Error de conexión.</p>';}
   b.disabled=false; document.getElementById('spin').style.display='none';
 }
-function badge(v){const m={'MALICIOSO':'mal','benigno':'ben','sin modelo':'non','error':'err'};
+function badge(v){const m={'MALICIOSO':'mal','benigno':'ben','sospechoso':'sus','sin modelo':'non','error':'err'};
   return '<span class="badge '+(m[v]||'non')+'">'+v+'</span>';}
 function render(d){
   const mal=d.maliciosos>0;
