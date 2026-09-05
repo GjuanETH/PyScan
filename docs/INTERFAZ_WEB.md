@@ -35,10 +35,22 @@ Abre el navegador en **http://127.0.0.1:5000**.
 3. **Actualizar lista de referencia** refresca la lista del Top de PyPI usada
    para detectar typosquatting (útil para mantener el detector vigente).
 
-## Panel de métricas
+## Pestañas
 
-La pestaña **Panel** (barra superior) muestra los resultados del proyecto dentro
-de la propia herramienta, útil para la sustentación:
+La barra superior tiene tres vistas:
+
+- **Escanear:** analizar paquetes o archivos (con detalle "por qué" al hacer clic
+  en cada fila).
+- **Análisis:** resume **lo que tú escaneaste** en la sesión (se actualiza con cada
+  escaneo): tarjetas, gráfico de veredictos, señales más frecuentes en lo analizado
+  e historial descargable.
+- **General:** estadísticas **fijas del modelo y los experimentos** (no cambian con
+  tus escaneos).
+
+## Pestaña General (métricas del modelo)
+
+Muestra los resultados del proyecto dentro de la propia herramienta, útil para la
+sustentación:
 
 - **KPI del modelo:** Recall (hold-out), F1, tasa de falsos positivos, PR-AUC,
   tiempo máximo por paquete y tamaño del dataset.

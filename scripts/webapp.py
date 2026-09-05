@@ -236,7 +236,8 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
 </style></head><body>
 <header><h1>pyscan</h1><span class="tag">detección de paquetes maliciosos en PyPI</span>
  <nav><button id="nav-scan" class="active" onclick="show('scan')">Escanear</button>
-      <button id="nav-dash" onclick="show('dash')">Panel</button></nav></header>
+      <button id="nav-analysis" onclick="show('analysis')">Análisis</button>
+      <button id="nav-general" onclick="show('general')">General</button></nav></header>
 <main>
  <section id="view-scan">
    <label for="pkgs">Paquetes o requirements.txt</label>
@@ -258,7 +259,27 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
    <div id="out"></div>
  </section>
 
- <section id="view-dash" style="display:none">
+ <section id="view-analysis" style="display:none">
+   <div class="note" style="margin-bottom:16px">Esta pestaña resume <b>lo que tú has analizado</b> en esta sesión. Se actualiza con cada escaneo.</div>
+   <div class="kpis" id="aKpis"></div>
+   <div class="cards">
+     <div class="panel"><h3>Veredictos de tus escaneos</h3>
+       <div class="sub">Cómo se repartió lo que analizaste (benigno / sospechoso / malicioso).</div>
+       <canvas id="chVerdict" height="220"></canvas></div>
+     <div class="panel"><h3>Señales más frecuentes en lo analizado</h3>
+       <div class="sub">Cuántos de tus paquetes activaron cada señal de riesgo.</div>
+       <canvas id="chSignals" height="220"></canvas></div>
+   </div>
+   <div class="panel" style="margin-top:18px"><h3>Historial de la sesión</h3>
+     <div class="sub">Todo lo que has analizado desde que abriste la página. Descárgalo como evidencia o para un pipeline.</div>
+     <div class="btns" style="margin-top:4px">
+       <button class="act ghost" onclick="downloadHist('json')">Descargar JSON</button>
+       <button class="act ghost" onclick="downloadHist('csv')">Descargar CSV</button></div>
+     <div id="hist" style="margin-top:12px"></div></div>
+ </section>
+
+ <section id="view-general" style="display:none">
+   <div class="note" style="margin-bottom:16px">Estas cifras son del <b>modelo entrenado y los experimentos</b>. Son fijas: no cambian con lo que escaneas.</div>
    <div class="kpis" id="kpis"></div>
    <div class="cards">
      <div class="panel"><h3>Vectores de ataque detectados</h3>
@@ -272,25 +293,14 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
      <div class="panel"><h3>Matriz de confusión (validación cruzada)</h3>
        <div class="sub">Aciertos y errores del modelo sobre datos de prueba (5 particiones). Pasa el mouse sobre cada celda.</div>
        <div id="cm"></div></div>
-     <div class="panel"><h3>En esta sesión</h3>
-       <div class="sub">Resumen de lo que has analizado desde que abriste la página.</div>
-       <div id="sess"></div></div>
-   </div>
-   <div class="cards" style="margin-top:18px">
-     <div class="panel"><h3>pyscan frente a otras herramientas</h3>
-       <div class="sub">Efectividad comparada con GuardDog (reglas) y ClamAV (antivirus de firmas) sobre el mismo conjunto. Pasa el mouse sobre cada barra.</div>
-       <canvas id="chCmp" height="220"></canvas>
-       <div class="sub" id="cmpNote" style="display:none;margin-top:10px"></div></div>
      <div class="panel"><h3>Importancia de características</h3>
        <div class="sub">Qué señales pesan más en la decisión del modelo. Pasa el mouse sobre cada barra para ver qué mide.</div>
        <canvas id="chImp" height="240"></canvas></div>
    </div>
-   <div class="panel" style="margin-top:18px"><h3>Historial de la sesión</h3>
-     <div class="sub">Todo lo que has analizado desde que abriste la página. Descárgalo como evidencia o para un pipeline.</div>
-     <div class="btns" style="margin-top:4px">
-       <button class="act ghost" onclick="downloadHist('json')">Descargar JSON</button>
-       <button class="act ghost" onclick="downloadHist('csv')">Descargar CSV</button></div>
-     <div id="hist" style="margin-top:12px"></div></div>
+   <div class="panel" style="margin-top:18px"><h3>pyscan frente a otras herramientas</h3>
+     <div class="sub">Efectividad comparada con GuardDog (reglas), ClamAV (un antivirus) y VirusTotal (60+ motores) sobre el mismo conjunto. Pasa el mouse sobre cada barra.</div>
+     <canvas id="chCmp" height="150"></canvas>
+     <div class="sub" id="cmpNote" style="display:none;margin-top:10px"></div></div>
    <div class="note" id="dashNote" style="display:none;margin-top:16px"></div>
  </section>
 </main>
@@ -299,19 +309,21 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
 let sess={analizados:0,benignos:0,sospechosos:0,maliciosos:0,errores:0};
 let history=[];
 let dashLoaded=false, charts={};
+const VIEWS=['scan','analysis','general'];
 function show(v){
-  document.getElementById('view-scan').style.display=(v==='scan')?'block':'none';
-  document.getElementById('view-dash').style.display=(v==='dash')?'block':'none';
-  document.getElementById('nav-scan').classList.toggle('active',v==='scan');
-  document.getElementById('nav-dash').classList.toggle('active',v==='dash');
-  if(v==='dash'){ loadDash(); }
+  for(const x of VIEWS){
+    document.getElementById('view-'+x).style.display=(v===x)?'block':'none';
+    document.getElementById('nav-'+x).classList.toggle('active',v===x);
+  }
+  if(v==='general'){ loadGeneral(); }
+  if(v==='analysis'){ renderAnalysis(); }
 }
 function tally(rs){const t=new Date().toLocaleTimeString();
   for(const r of rs){sess.analizados++;
     if(r.verdict==='MALICIOSO')sess.maliciosos++;else if(r.verdict==='benigno')sess.benignos++;
     else if(r.verdict==='sospechoso')sess.sospechosos++;else if(r.verdict==='error')sess.errores++;
     history.push(Object.assign({time:t},r));}
-  if(dashLoaded)renderHist();}
+  if(document.getElementById('view-analysis').style.display!=='none')renderAnalysis();}
 async function scan(){
   const text=document.getElementById('pkgs').value.trim();
   if(!text){alert('Escribe al menos un paquete.');return;}
@@ -399,8 +411,7 @@ const VEC={
  V5_insecure_deserialization:"Deserialización insegura: pickle o marshal, que pueden ejecutar código arbitrario al cargarse.",
  V6_encoding:"Codificación: uso de base64/hex para ocultar cargas o URLs maliciosas.",
  V7_network_exfiltration:"Exfiltración de red: conexiones para descargar o enviar datos (URLs, sockets, requests). Detectado por AST."};
-async function loadDash(){
-  renderSession(); renderHist();
+async function loadGeneral(){
   if(dashLoaded) return;
   const r=await fetch('/api/metrics'); const d=await r.json();
   const m=d.metrics, sel=m?m.selected_model:null, cv=(m&&sel)?m.cv_results[sel]:null, ho=m?m.holdout:null;
@@ -492,11 +503,41 @@ function downloadHist(fmt){
     blob=new Blob([hdr.join(',')+'\n'+rows.join('\n')],{type:'text/csv'});name='pyscan_historial.csv';}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
-function renderSession(){
-  document.getElementById('sess').innerHTML=
-    '<div class="kpis" style="margin:0">'+kpi(sess.analizados,'analizados')+
-    kpi(sess.maliciosos+sess.sospechosos,'sospechosos / maliciosos')+
-    kpi(sess.benignos,'benignos')+'</div>';
+function renderAnalysis(){
+  renderHist();
+  // Tarjetas
+  document.getElementById('aKpis').innerHTML=
+    kpi(sess.analizados,'analizados')+
+    kpi(sess.maliciosos,'maliciosos')+
+    kpi(sess.sospechosos,'sospechosos')+
+    kpi(sess.benignos,'benignos');
+  // Gráfica de veredictos
+  const labels=['Benigno','Sospechoso','Malicioso','Otro'];
+  const vals=[sess.benignos,sess.sospechosos,sess.maliciosos,
+              sess.analizados-sess.benignos-sess.sospechosos-sess.maliciosos];
+  const cols=['#1e8449','#E8791E','#c0392b','#9aa3b2'];
+  if(charts.verdict)charts.verdict.destroy();
+  charts.verdict=new Chart(document.getElementById('chVerdict'),{type:'doughnut',
+    data:{labels,datasets:[{data:vals,backgroundColor:cols}]},
+    options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
+      label:c=>' '+c.label+': '+c.parsed}}}}});
+  // Gráfica de señales activas en lo analizado
+  const counts={}; for(const k in FEAT)counts[k]=0;
+  for(const r of history){if(!r.features)continue;
+    for(const k in FEAT)if(fActive(k,r.features[k]))counts[k]++;}
+  const ks=Object.keys(FEAT).filter(k=>counts[k]>0).sort((a,b)=>counts[b]-counts[a]);
+  if(charts.signals)charts.signals.destroy();
+  if(ks.length){
+    charts.signals=new Chart(document.getElementById('chSignals'),{type:'bar',
+      data:{labels:ks.map(k=>FEAT[k].l),datasets:[{data:ks.map(k=>counts[k]),backgroundColor:'#2E5C9E'}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>c.parsed.x+' paquete(s)',
+        afterLabel:c=>FEAT[ks[c.dataIndex]]?wrap(FEAT[ks[c.dataIndex]].d):[]}}},
+        scales:{x:{beginAtZero:true,ticks:{precision:0}}}}});
+  }else{
+    const cv=document.getElementById('chSignals');
+    cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+  }
 }
 </script></body></html>"""
 
