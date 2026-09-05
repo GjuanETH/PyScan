@@ -47,8 +47,9 @@ de la propia herramienta, útil para la sustentación:
 - **Matriz de confusión** de la validación cruzada (VP/FN/FP/VN).
 - **Composición del dataset:** anillo maliciosas vs benignas.
 - **pyscan frente a otras herramientas:** barras comparando Recall/Precisión/F1/FP
-  de pyscan con GuardDog y ClamAV (de `compare_guarddog.json` y
-  `compare_antivirus.json`; si no existen, invita a correr los experimentos).
+  de pyscan con GuardDog, ClamAV (un antivirus) y VirusTotal (60+ motores), de
+  `compare_guarddog.json`, `compare_antivirus.json` y `compare_virustotal.json`;
+  si no existen, invita a correr los experimentos.
 - **Importancia de características:** qué señales pesan más en la decisión del
   modelo (de `feature_importance` en `metrics.json`).
 - **En esta sesión:** contador de lo analizado en la sesión actual.

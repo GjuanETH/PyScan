@@ -136,6 +136,7 @@ def api_metrics():
     benchmark = load("analysis/benchmark.json")
     guarddog = load("analysis/compare_guarddog.json")
     antivirus = load("analysis/compare_antivirus.json")
+    virustotal = load("analysis/compare_virustotal.json")
 
     comp = None
     try:
@@ -151,6 +152,7 @@ def api_metrics():
     return jsonify({"metrics": metrics, "vectors": vectors,
                     "benchmark": benchmark, "dataset": comp,
                     "guarddog": guarddog, "antivirus": antivirus,
+                    "virustotal": virustotal,
                     "has_model": config.MODEL_FILE.exists()})
 
 
@@ -445,7 +447,8 @@ async function loadDash(){
   const MK=['recall','precision','f1','false_positive_rate'], ML=['Recall','Precisión','F1','Falsos pos.'];
   let pys=null; const others=[];
   if(d.guarddog){pys=d.guarddog.pyscan; if(d.guarddog.guarddog)others.push({label:'GuardDog (reglas)',m:d.guarddog.guarddog,c:'#E8791E'});}
-  if(d.antivirus){pys=pys||d.antivirus.pyscan; if(d.antivirus.clamav)others.push({label:'ClamAV (antivirus)',m:d.antivirus.clamav,c:'#7a7f8a'});}
+  if(d.antivirus){pys=pys||d.antivirus.pyscan; if(d.antivirus.clamav)others.push({label:'ClamAV (1 antivirus)',m:d.antivirus.clamav,c:'#7a7f8a'});}
+  if(d.virustotal){pys=pys||d.virustotal.pyscan; if(d.virustotal.virustotal)others.push({label:'VirusTotal (60+ motores)',m:d.virustotal.virustotal,c:'#1e8449'});}
   if(pys){const ds=[{label:'pyscan (ML)',data:MK.map(k=>pys[k]),backgroundColor:'#1F3864'}];
     for(const o of others)ds.push({label:o.label,data:MK.map(k=>o.m[k]),backgroundColor:o.c});
     new Chart(document.getElementById('chCmp'),{type:'bar',
