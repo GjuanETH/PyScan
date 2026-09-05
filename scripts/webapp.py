@@ -192,6 +192,10 @@ td{padding:10px 12px;border-top:1px solid #eef1f7;font-size:14px;vertical-align:
 .kpi{background:#fff;border-radius:12px;padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
 .kpi .v{font-size:30px;font-weight:800;color:var(--navy);}
 .kpi .l{font-size:12.5px;color:#6a7180;margin-top:4px;}
+.kpi .l .i{color:#9aa3b2;font-size:11px;margin-left:2px;}
+[data-tip]{position:relative;cursor:help;}
+[data-tip]:hover::after{content:attr(data-tip);position:absolute;left:0;top:100%;z-index:40;width:250px;white-space:normal;background:var(--navy);color:#fff;font-size:12px;font-weight:400;line-height:1.45;padding:10px 12px;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.22);margin-top:6px;text-align:left;}
+.panel .sub{font-size:12px;color:#8a90a0;margin:-6px 0 12px;line-height:1.4;}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .panel{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
 .panel h3{margin:0 0 12px;color:var(--navy);font-size:15px;}
@@ -230,12 +234,20 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
  <section id="view-dash" style="display:none">
    <div class="kpis" id="kpis"></div>
    <div class="cards">
-     <div class="panel"><h3>Vectores de ataque detectados</h3><canvas id="chVec" height="220"></canvas></div>
-     <div class="panel"><h3>Composición del dataset</h3><canvas id="chData" height="220"></canvas></div>
+     <div class="panel"><h3>Vectores de ataque detectados</h3>
+       <div class="sub">Frecuencia de cada técnica maliciosa hallada en las muestras del dataset (análisis estático). Pasa el mouse sobre cada barra para ver qué significa.</div>
+       <canvas id="chVec" height="220"></canvas></div>
+     <div class="panel"><h3>Composición del dataset</h3>
+       <div class="sub">Paquetes usados para entrenar y validar el modelo. Pasa el mouse sobre cada mitad para ver su origen.</div>
+       <canvas id="chData" height="220"></canvas></div>
    </div>
    <div class="cards" style="margin-top:18px">
-     <div class="panel"><h3>Matriz de confusión (validación cruzada)</h3><div id="cm"></div></div>
-     <div class="panel"><h3>En esta sesión</h3><div id="sess"></div></div>
+     <div class="panel"><h3>Matriz de confusión (validación cruzada)</h3>
+       <div class="sub">Aciertos y errores del modelo sobre datos de prueba (5 particiones). Pasa el mouse sobre cada celda.</div>
+       <div id="cm"></div></div>
+     <div class="panel"><h3>En esta sesión</h3>
+       <div class="sub">Resumen de lo que has analizado desde que abriste la página.</div>
+       <div id="sess"></div></div>
    </div>
    <div class="note" id="dashNote" style="display:none;margin-top:16px"></div>
  </section>
@@ -297,39 +309,72 @@ async function update(){
   }catch(e){n.style.display='block';n.textContent='Error al actualizar.';}
   b.disabled=false; b.textContent='Actualizar lista de referencia';
 }
-function kpi(v,l){return '<div class="kpi"><div class="v">'+v+'</div><div class="l">'+l+'</div></div>';}
+function kpi(v,l,tip){
+  const attr=tip?(' data-tip="'+tip.replace(/"/g,'&quot;')+'"'):'';
+  const ic=tip?' <span class="i">&#9432;</span>':'';
+  return '<div class="kpi"'+attr+'><div class="v">'+v+'</div><div class="l">'+l+ic+'</div></div>';}
+function wrap(s,n){n=n||42;const w=s.split(' ');const out=[];let ln='';
+  for(const x of w){if((ln+' '+x).trim().length>n){out.push(ln.trim());ln=x;}else{ln+=' '+x;}}
+  if(ln.trim())out.push(ln.trim());return out;}
+const VEC={
+ V1_typosquatting:"Typosquatting: nombres casi idénticos a paquetes populares (ej. 'reqursts' por 'requests') para engañar a quien instala. Se mide por distancia de Levenshtein contra el Top de PyPI.",
+ V2_install_execution:"Ejecución en instalación: código que corre solo al instalar el paquete (hooks en setup.py). Detectado por el análisis AST.",
+ V3_obfuscation:"Ofuscación: código escondido con nombres sin sentido o cadenas codificadas. Detectado por la entropía de Shannon.",
+ V4_command_execution:"Ejecución de comandos: uso de os.system, subprocess, eval o exec para correr órdenes del sistema. Detectado por el análisis AST.",
+ V5_insecure_deserialization:"Deserialización insegura: pickle o marshal, que pueden ejecutar código arbitrario al cargarse.",
+ V6_encoding:"Codificación: uso de base64/hex para ocultar cargas o URLs maliciosas.",
+ V7_network_exfiltration:"Exfiltración de red: conexiones para descargar o enviar datos (URLs, sockets, requests). Detectado por AST."};
 async function loadDash(){
   renderSession();
   if(dashLoaded) return;
   const r=await fetch('/api/metrics'); const d=await r.json();
   const m=d.metrics, sel=m?m.selected_model:null, cv=(m&&sel)?m.cv_results[sel]:null, ho=m?m.holdout:null;
   let k='';
-  if(ho){k+=kpi((ho.recall*100).toFixed(1)+'%','Recall (hold-out)');
-         k+=kpi(ho.f1.toFixed(3),'F1-Score (hold-out)');}
-  if(cv){k+=kpi((cv.false_positive_rate*100).toFixed(1)+'%','Falsos positivos');
-         k+=kpi(cv.pr_auc.toFixed(3),'PR-AUC');}
-  if(d.benchmark&&d.benchmark.tiempo_seg){k+=kpi(d.benchmark.tiempo_seg.max+' s','Tiempo máx./paquete');}
-  if(d.dataset){k+=kpi((d.dataset.malicious+d.dataset.benign).toLocaleString(),'Muestras del dataset');}
+  if(ho){k+=kpi((ho.recall*100).toFixed(1)+'%','Recall (hold-out)',
+      'De cada 100 paquetes maliciosos reales, el modelo detecta ~'+(ho.recall*100).toFixed(0)+'. Medido sobre el 20% de datos que el modelo nunca vio al entrenar (hold-out). Es la métrica clave: mide cuánto malware NO se escapa.');
+         k+=kpi(ho.f1.toFixed(3),'F1-Score (hold-out)',
+      'Equilibrio entre detectar malware (recall) y no dar falsas alarmas (precisión). Es su media armónica: cerca de 1 es mejor. Resume la calidad global en un solo número.');}
+  if(cv){k+=kpi((cv.false_positive_rate*100).toFixed(1)+'%','Falsos positivos',
+      'De cada 100 paquetes benignos, ~'+(cv.false_positive_rate*100).toFixed(1)+' se marcan por error como maliciosos (falsas alarmas). Medido en validación cruzada de 5 particiones. Conviene que sea bajo.');
+         k+=kpi(cv.pr_auc.toFixed(3),'PR-AUC',
+      'Área bajo la curva Precisión-Recall. Mide qué tan bien separa malicioso de benigno cuando las clases están desbalanceadas; 1.0 es perfecto. Más informativa que la exactitud simple.');}
+  if(d.benchmark&&d.benchmark.tiempo_seg){k+=kpi(d.benchmark.tiempo_seg.max+' s','Tiempo máx./paquete',
+      'Tiempo máximo en analizar un paquete completo: descarga desde PyPI + análisis estático (nombre, entropía, AST) + veredicto del modelo. Medido con benchmark_performance.py.');}
+  if(d.dataset){k+=kpi((d.dataset.malicious+d.dataset.benign).toLocaleString(),'Muestras del dataset',
+      'Total de paquetes para entrenar y validar: '+d.dataset.malicious.toLocaleString()+' maliciosos (repositorios DataDog y PyPI Malregistry) y '+d.dataset.benign.toLocaleString()+' benignos (Top de PyPI).');}
   document.getElementById('kpis').innerHTML=k||'<div class="kpi"><div class="v">—</div><div class="l">Entrena el modelo para ver métricas</div></div>';
   if(!m){document.getElementById('dashNote').style.display='block';
     document.getElementById('dashNote').textContent='No se encontró data/models/metrics.json. Entrena el modelo (train_model.py) para poblar el panel.';}
   // Vectores
-  if(d.vectors&&d.vectors.vectors){const vs=d.vectors.vectors;
-    const arr=Object.values(vs).sort((a,b)=>b.percentage-a.percentage);
+  if(d.vectors&&d.vectors.vectors){
+    const arr=Object.entries(d.vectors.vectors)
+      .map(([kk,v])=>({label:v.label,pct:v.percentage,desc:VEC[kk]||''}))
+      .sort((a,b)=>b.pct-a.pct);
     new Chart(document.getElementById('chVec'),{type:'bar',
-      data:{labels:arr.map(x=>x.label.split(' ')[0]),datasets:[{label:'% de paquetes',data:arr.map(x=>x.percentage),backgroundColor:'#1F3864'}]},
-      options:{plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+      data:{labels:arr.map(x=>x.label),datasets:[{label:'% de paquetes',data:arr.map(x=>x.pct),backgroundColor:'#1F3864'}]},
+      options:{plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>c.parsed.y+'% de las muestras',
+        afterLabel:c=>arr[c.dataIndex].desc?wrap(arr[c.dataIndex].desc):[]}}},
+        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
   }
   // Dataset
   if(d.dataset){new Chart(document.getElementById('chData'),{type:'doughnut',
     data:{labels:['Maliciosas','Benignas'],datasets:[{data:[d.dataset.malicious,d.dataset.benign],backgroundColor:['#c0392b','#1e8449']}]},
-    options:{plugins:{legend:{position:'bottom'}}}});}
+    options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
+      label:c=>' '+c.label+': '+c.parsed.toLocaleString()+' paquetes',
+      afterLabel:c=>wrap(c.dataIndex===0
+        ?'Muestras reales de malware de los repositorios DataDog y PyPI Malregistry.'
+        :'Paquetes legítimos: los más descargados del Top de PyPI.')}}}}});}
   // Matriz de confusión
   if(cv&&cv.confusion_matrix){const c=cv.confusion_matrix;
+    const T={vp:'Verdaderos positivos: malware correctamente detectado.',
+             fn:'Falsos negativos: malware que se le escapó al modelo. Es el error más costoso; por eso se optimiza el Recall para reducirlo.',
+             fp:'Falsos positivos: paquetes benignos marcados por error como maliciosos (falsas alarmas).',
+             vn:'Verdaderos negativos: paquetes benignos correctamente aprobados.'};
     document.getElementById('cm').innerHTML=
     '<table class="cm"><tr><th></th><th>Pred. Malicioso</th><th>Pred. Benigno</th></tr>'+
-    '<tr><th>Real Malicioso</th><td class="vp">VP '+c.tp+'</td><td class="fn">FN '+c.fn+'</td></tr>'+
-    '<tr><th>Real Benigno</th><td class="fp">FP '+c.fp+'</td><td class="vn">VN '+c.tn+'</td></tr></table>';}
+    '<tr><th>Real Malicioso</th><td class="vp" data-tip="'+T.vp+'">VP '+c.tp+'</td><td class="fn" data-tip="'+T.fn+'">FN '+c.fn+'</td></tr>'+
+    '<tr><th>Real Benigno</th><td class="fp" data-tip="'+T.fp+'">FP '+c.fp+'</td><td class="vn" data-tip="'+T.vn+'">VN '+c.tn+'</td></tr></table>';}
   dashLoaded=true;
 }
 function renderSession(){
