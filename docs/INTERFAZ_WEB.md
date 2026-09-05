@@ -35,12 +35,32 @@ Abre el navegador en **http://127.0.0.1:5000**.
 3. **Actualizar lista de referencia** refresca la lista del Top de PyPI usada
    para detectar typosquatting (útil para mantener el detector vigente).
 
+## Panel de métricas
+
+La pestaña **Panel** (barra superior) muestra los resultados del proyecto dentro
+de la propia herramienta, útil para la sustentación:
+
+- **KPI del modelo:** Recall (hold-out), F1, tasa de falsos positivos, PR-AUC,
+  tiempo máximo por paquete y tamaño del dataset.
+- **Vectores de ataque:** gráfico de barras con la frecuencia de cada vector
+  (V1–V7), leído de `data/analysis/attack_vectors.json`.
+- **Matriz de confusión** de la validación cruzada (VP/FN/FP/VN).
+- **Composición del dataset:** anillo maliciosas vs benignas.
+- **En esta sesión:** contador de lo analizado en la sesión actual.
+
+Las cifras se leen de `data/models/metrics.json`, `data/analysis/attack_vectors.json`
+y `data/analysis/benchmark.json`. Si falta el modelo entrenado, el panel avisa y
+muestra lo que haya disponible. Usa Chart.js desde CDN (requiere conexión para
+los gráficos; las cifras KPI y la matriz funcionan sin conexión).
+
 ## Endpoints (para integración)
 
 - `GET /` — la página.
 - `POST /api/scan` — recibe `{"text": "..."}` y devuelve los resultados en JSON.
+- `POST /api/scan-local` — recibe un archivo (multipart) y lo analiza en local.
 - `POST /api/update` — refresca la lista de referencia.
 - `GET /api/status` — versión y si hay modelo entrenado.
+- `GET /api/metrics` — métricas del modelo, vectores y dataset para el panel.
 
 ## Nota
 
