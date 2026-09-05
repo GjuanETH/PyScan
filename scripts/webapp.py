@@ -21,10 +21,12 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "scripts"))
 
+import tempfile  # noqa: E402
+from werkzeug.utils import secure_filename  # noqa: E402
 from flask import Flask, jsonify, request, Response  # noqa: E402
 
 from pyscan import __version__, config  # noqa: E402
-from pyscan.cli import _scan_pypi, _parse_requirements  # noqa: E402
+from pyscan.cli import _scan_pypi, _scan_local, _parse_requirements  # noqa: E402
 from pyscan.models import Verdict, ScanReport  # noqa: E402
 
 app = Flask(__name__)
@@ -81,6 +83,20 @@ def api_scan():
         results.append(_report_dict(report, note))
     mal = sum(1 for r in results if r["verdict"] == "MALICIOSO")
     return jsonify({"results": results, "total": len(results), "maliciosos": mal})
+
+
+@app.post("/api/scan-local")
+def api_scan_local():
+    """Analiza un paquete local subido (.tar.gz/.whl/.zip), sin descargar de PyPI."""
+    f = request.files.get("file")
+    if not f or not f.filename:
+        return jsonify({"error": "No se recibió ningún archivo."}), 400
+    name = secure_filename(f.filename)
+    with tempfile.TemporaryDirectory(prefix="pyscan_web_") as tmp:
+        path = Path(tmp) / name
+        f.save(str(path))
+        report, note = _scan_local(path, None)
+    return jsonify(_report_dict(report, note))
 
 
 @app.post("/api/update")
@@ -165,6 +181,12 @@ footer{max-width:960px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:1
    </div>
    <div class="spin" id="spin">Analizando… esto puede tardar unos segundos por paquete.</div>
    <div class="note" id="updNote" style="display:none"></div>
+   <div style="margin-top:18px;border-top:1px solid #e3e8f0;padding-top:14px">
+     <label>… o analiza un paquete ya descargado (archivo local)</label>
+     <input type="file" id="file" accept=".gz,.tgz,.whl,.zip,.egg,.tar">
+     <button class="ghost" id="locBtn" onclick="scanLocal()" style="margin-left:8px">Analizar archivo</button>
+     <div class="hint">Útil para revisar un .tar.gz o .whl que ya tienes en disco.</div>
+   </div>
   </div>
  </div>
  <div id="summary"></div>
@@ -196,6 +218,21 @@ function render(d){
        '<td>'+(r.score!=null?r.score:'—')+'</td><td>'+(r.error?('<i>'+r.error+'</i>'):(r.reasons.join('; ')||'—'))+'</td></tr>';
   }
   h+='</table>'; document.getElementById('out').innerHTML=h;
+}
+async function scanLocal(){
+  const inp=document.getElementById('file');
+  if(!inp.files||!inp.files.length){alert('Selecciona un archivo (.tar.gz o .whl).');return;}
+  const b=document.getElementById('locBtn'); b.disabled=true;
+  document.getElementById('spin').style.display='block';
+  document.getElementById('out').innerHTML=''; document.getElementById('summary').textContent='';
+  try{
+    const fd=new FormData(); fd.append('file', inp.files[0]);
+    const r=await fetch('/api/scan-local',{method:'POST',body:fd});
+    const res=await r.json();
+    if(res.error){document.getElementById('out').innerHTML='<p>'+res.error+'</p>';}
+    else{render({results:[res],total:1,maliciosos:res.verdict==='MALICIOSO'?1:0});}
+  }catch(e){document.getElementById('out').innerHTML='<p>Error de conexión.</p>';}
+  b.disabled=false; document.getElementById('spin').style.display='none';
 }
 async function update(){
   const b=document.getElementById('updBtn'); b.disabled=true; b.textContent='Actualizando…';
