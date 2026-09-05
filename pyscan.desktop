@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=pyscan
+Comment=Detección de paquetes maliciosos en PyPI
+Exec=bash -c "cd $HOME/Tesis && ./start_pyscan.sh"
+Path=/home/vboxuser/Tesis
+Terminal=true
+Categories=Utility;Security;

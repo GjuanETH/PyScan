@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 # --- Rutas ----------------------------------------------------------------
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
+# Al correr como ejecutable de PyInstaller (sys.frozen), la carpeta `data/` se
+# busca junto al .exe, para poder actualizar modelo/experimentos sin reconstruir.
+if getattr(sys, "frozen", False):
+    PROJECT_ROOT = Path(sys.executable).resolve().parent
+else:
+    PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DATA_DIR = PROJECT_ROOT / "data"
 CACHE_DIR = DATA_DIR / "cache"          # tarballs descargados
 BENIGN_DIR = DATA_DIR / "benign"        # paquetes benignos del dataset

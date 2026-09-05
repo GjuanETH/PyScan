@@ -104,6 +104,13 @@ def api_scan_local():
 @app.post("/api/update")
 def api_update():
     import subprocess
+    if getattr(sys, "frozen", False):
+        model_info = ("Modelo entrenado presente" if config.MODEL_FILE.exists()
+                      else "Modelo: no entrenado")
+        return jsonify({"ok": False, "model": model_info,
+                        "message": ("La actualización de la lista se hace desde el "
+                                    "código fuente; el ejecutable usa la carpeta data/ "
+                                    "que tiene al lado.")})
     try:
         out = subprocess.run([sys.executable, str(ROOT / "scripts" / "fetch_top_pypi.py"),
                               "--limit", "5000"], capture_output=True, text=True, timeout=120)
