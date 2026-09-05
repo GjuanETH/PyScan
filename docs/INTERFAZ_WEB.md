@@ -46,12 +46,25 @@ de la propia herramienta, útil para la sustentación:
   (V1–V7), leído de `data/analysis/attack_vectors.json`.
 - **Matriz de confusión** de la validación cruzada (VP/FN/FP/VN).
 - **Composición del dataset:** anillo maliciosas vs benignas.
+- **pyscan frente a otras herramientas:** barras comparando Recall/Precisión/F1/FP
+  de pyscan con GuardDog y ClamAV (de `compare_guarddog.json` y
+  `compare_antivirus.json`; si no existen, invita a correr los experimentos).
+- **Importancia de características:** qué señales pesan más en la decisión del
+  modelo (de `feature_importance` en `metrics.json`).
 - **En esta sesión:** contador de lo analizado en la sesión actual.
+- **Historial de la sesión:** tabla de todo lo analizado, con botones para
+  **descargar en JSON o CSV** (evidencia o integración).
 
-Las cifras se leen de `data/models/metrics.json`, `data/analysis/attack_vectors.json`
-y `data/analysis/benchmark.json`. Si falta el modelo entrenado, el panel avisa y
-muestra lo que haya disponible. Usa Chart.js desde CDN (requiere conexión para
-los gráficos; las cifras KPI y la matriz funcionan sin conexión).
+Cada dato del panel muestra una explicación al pasar el mouse (de dónde sale y
+cómo se calcula). En la pestaña Escanear, al hacer **clic en una fila** se
+despliega el detalle de las 9 características que llevaron al veredicto, con las
+señales activas resaltadas.
+
+Las cifras se leen de `data/models/metrics.json`, `data/analysis/attack_vectors.json`,
+`data/analysis/benchmark.json`, `compare_guarddog.json` y `compare_antivirus.json`.
+Si falta el modelo entrenado, el panel avisa y muestra lo que haya disponible. Usa
+Chart.js desde CDN (requiere conexión para los gráficos; KPI y matriz funcionan sin
+conexión).
 
 ## Endpoints (para integración)
 

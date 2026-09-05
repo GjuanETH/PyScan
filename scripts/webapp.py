@@ -39,7 +39,11 @@ app = Flask(__name__)
 
 def _report_dict(report: ScanReport, note) -> dict:
     r = {"package": report.package.name, "version": report.package.version,
-         "verdict": "sin modelo", "score": None, "reasons": [], "error": None}
+         "verdict": "sin modelo", "score": None, "reasons": [], "error": None,
+         "features": None}
+    if report.features is not None:
+        r["features"] = {k: round(float(v), 3)
+                         for k, v in report.features.model_dump().items()}
     if report.errors:
         if report.typosquat and report.typosquat.is_typosquat:
             r["verdict"] = "sospechoso"
@@ -130,6 +134,8 @@ def api_metrics():
     metrics = load("models/metrics.json")
     vectors = load("analysis/attack_vectors.json")
     benchmark = load("analysis/benchmark.json")
+    guarddog = load("analysis/compare_guarddog.json")
+    antivirus = load("analysis/compare_antivirus.json")
 
     comp = None
     try:
@@ -144,6 +150,7 @@ def api_metrics():
 
     return jsonify({"metrics": metrics, "vectors": vectors,
                     "benchmark": benchmark, "dataset": comp,
+                    "guarddog": guarddog, "antivirus": antivirus,
                     "has_model": config.MODEL_FILE.exists()})
 
 
@@ -196,10 +203,21 @@ td{padding:10px 12px;border-top:1px solid #eef1f7;font-size:14px;vertical-align:
 [data-tip]{position:relative;cursor:help;}
 [data-tip]:hover::after{content:attr(data-tip);position:absolute;left:0;top:100%;z-index:40;width:250px;white-space:normal;background:var(--navy);color:#fff;font-size:12px;font-weight:400;line-height:1.45;padding:10px 12px;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.22);margin-top:6px;text-align:left;}
 .panel .sub{font-size:12px;color:#8a90a0;margin:-6px 0 12px;line-height:1.4;}
+.row.clk{cursor:pointer;}
+.row.clk:hover td{background:#f7f9fc;}
+.caret{color:#8a90a0;font-size:11px;}
+.det td{background:#f7f9fc;}
+.feat{width:100%;border-collapse:collapse;box-shadow:none;overflow:visible;}
+.feat th{background:#eef1f7;color:#33415c;font-size:12px;padding:6px 10px;}
+.feat td{font-size:13px;padding:6px 10px;border-top:1px solid #e3e8f0;}
+.feat td.muted{color:#8a90a0;font-size:12px;}
+.feat tr.on td{background:#fdecea;}
+.feat tr.on td:first-child{color:#c0392b;font-weight:700;}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .panel{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
 .panel h3{margin:0 0 12px;color:var(--navy);font-size:15px;}
-.cm{width:100%;border-collapse:collapse;}
+.cm{width:100%;border-collapse:collapse;overflow:visible;}
+.cm td[data-tip]:hover::after{top:auto;bottom:100%;margin:0 0 6px;left:50%;transform:translateX(-50%);}
 .cm td,.cm th{border:1px solid #e3e8f0;padding:10px;text-align:center;font-size:13px;}
 .cm .vp{background:#e7f4ea;color:#1e8449;font-weight:700;}
 .cm .vn{background:#e7f4ea;color:#1e8449;font-weight:700;}
@@ -249,12 +267,28 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
        <div class="sub">Resumen de lo que has analizado desde que abriste la página.</div>
        <div id="sess"></div></div>
    </div>
+   <div class="cards" style="margin-top:18px">
+     <div class="panel"><h3>pyscan frente a otras herramientas</h3>
+       <div class="sub">Efectividad comparada con GuardDog (reglas) y ClamAV (antivirus de firmas) sobre el mismo conjunto. Pasa el mouse sobre cada barra.</div>
+       <canvas id="chCmp" height="220"></canvas>
+       <div class="sub" id="cmpNote" style="display:none;margin-top:10px"></div></div>
+     <div class="panel"><h3>Importancia de características</h3>
+       <div class="sub">Qué señales pesan más en la decisión del modelo. Pasa el mouse sobre cada barra para ver qué mide.</div>
+       <canvas id="chImp" height="240"></canvas></div>
+   </div>
+   <div class="panel" style="margin-top:18px"><h3>Historial de la sesión</h3>
+     <div class="sub">Todo lo que has analizado desde que abriste la página. Descárgalo como evidencia o para un pipeline.</div>
+     <div class="btns" style="margin-top:4px">
+       <button class="act ghost" onclick="downloadHist('json')">Descargar JSON</button>
+       <button class="act ghost" onclick="downloadHist('csv')">Descargar CSV</button></div>
+     <div id="hist" style="margin-top:12px"></div></div>
    <div class="note" id="dashNote" style="display:none;margin-top:16px"></div>
  </section>
 </main>
 <footer>pyscan — Universidad Católica de Colombia. Ejecución local (127.0.0.1).</footer>
 <script>
 let sess={analizados:0,benignos:0,sospechosos:0,maliciosos:0,errores:0};
+let history=[];
 let dashLoaded=false, charts={};
 function show(v){
   document.getElementById('view-scan').style.display=(v==='scan')?'block':'none';
@@ -263,9 +297,12 @@ function show(v){
   document.getElementById('nav-dash').classList.toggle('active',v==='dash');
   if(v==='dash'){ loadDash(); }
 }
-function tally(rs){for(const r of rs){sess.analizados++;
-  if(r.verdict==='MALICIOSO')sess.maliciosos++;else if(r.verdict==='benigno')sess.benignos++;
-  else if(r.verdict==='sospechoso')sess.sospechosos++;else if(r.verdict==='error')sess.errores++;}}
+function tally(rs){const t=new Date().toLocaleTimeString();
+  for(const r of rs){sess.analizados++;
+    if(r.verdict==='MALICIOSO')sess.maliciosos++;else if(r.verdict==='benigno')sess.benignos++;
+    else if(r.verdict==='sospechoso')sess.sospechosos++;else if(r.verdict==='error')sess.errores++;
+    history.push(Object.assign({time:t},r));}
+  if(dashLoaded)renderHist();}
 async function scan(){
   const text=document.getElementById('pkgs').value.trim();
   if(!text){alert('Escribe al menos un paquete.');return;}
@@ -290,17 +327,46 @@ async function scanLocal(){
   }catch(e){document.getElementById('out').innerHTML='<p>Error de conexión.</p>';}
   b.disabled=false; document.getElementById('spin').style.display='none';
 }
+const FEAT={
+ name_min_distance:{l:'Distancia del nombre',d:'Distancia de edición al paquete legítimo más parecido. Menor = más sospechoso de typosquatting.'},
+ is_typosquat:{l:'¿Typosquatting?',d:'1 si el nombre imita a un paquete popular del Top de PyPI.'},
+ has_combo_affix:{l:'Afijo combo',d:'1 si añade prefijos/sufijos (python-, -dev...) a un nombre conocido.'},
+ entropy_max:{l:'Entropía máxima',d:'Máxima aleatoriedad del contenido; alta sugiere ofuscación o datos empaquetados.'},
+ entropy_mean:{l:'Entropía media',d:'Aleatoriedad promedio del contenido del paquete.'},
+ entropy_suspicious_windows:{l:'Ventanas de alta entropía',d:'Nº de bloques con entropía sospechosa (posible código ofuscado).'},
+ ast_dangerous_calls:{l:'Llamadas peligrosas',d:'Nº de os.system/eval/exec/subprocess hallados en el código.'},
+ ast_network_literals:{l:'Literales de red',d:'Nº de URLs/IPs/sockets en el código (posible exfiltración).'},
+ ast_has_install_hook:{l:'Hook de instalación',d:'1 si ejecuta código al instalarse (setup.py).'}};
+function fActive(k,v){
+  if(k==='name_min_distance')return v<=2;
+  if(k==='entropy_max')return v>=4.5;
+  if(k==='entropy_mean')return v>=4.0;
+  return v>=1;}
 function badge(v){const m={'MALICIOSO':'mal','benigno':'ben','sospechoso':'sus','sin modelo':'non','error':'err'};
   return '<span class="badge '+(m[v]||'non')+'">'+v+'</span>';}
+function detailRows(f){
+  if(!f)return '<i>Sin señales (el paquete no pudo analizarse).</i>';
+  let h='<table class="feat"><tr><th>Señal</th><th>Valor</th><th>Qué significa</th></tr>';
+  for(const k in FEAT){const v=f[k],a=fActive(k,v);
+    h+='<tr class="'+(a?'on':'')+'"><td>'+(a?'⚑ ':'')+FEAT[k].l+'</td><td>'+v+'</td><td class="muted">'+FEAT[k].d+'</td></tr>';}
+  return h+'</table><div class="sub" style="margin-top:6px">⚑ = señal activa que contribuyó al veredicto.</div>';}
 function render(d){
   const mal=d.maliciosos>0;
   document.getElementById('summary').innerHTML='Analizados: '+d.total+' · '+
-    '<span style="color:'+(mal?'#c0392b':'#1e8449')+'">'+d.maliciosos+' maliciosos</span>';
+    '<span style="color:'+(mal?'#c0392b':'#1e8449')+'">'+d.maliciosos+' maliciosos</span>'+
+    '<div class="sub" style="margin-top:4px">Haz clic en una fila para ver por qué el modelo decidió eso.</div>';
   let h='<table><tr><th>Paquete</th><th>Veredicto</th><th>Score</th><th>Motivos / señales</th></tr>';
-  for(const r of d.results){h+='<tr><td><b>'+r.package+'</b> '+(r.version||'')+'</td><td>'+badge(r.verdict)+'</td>'+
-    '<td>'+(r.score!=null?r.score:'—')+'</td><td>'+(r.error?('<i>'+r.error+'</i>'):(r.reasons.join('; ')||'—'))+'</td></tr>';}
+  d.results.forEach((r,i)=>{const can=!!r.features;
+    h+='<tr class="row'+(can?' clk':'')+'"'+(can?' onclick="tgl('+i+')"':'')+'>'+
+      '<td>'+(can?'<span class="caret" id="cr'+i+'">▸</span> ':'')+'<b>'+r.package+'</b> '+(r.version||'')+'</td>'+
+      '<td>'+badge(r.verdict)+'</td><td>'+(r.score!=null?r.score:'—')+'</td>'+
+      '<td>'+(r.error?('<i>'+r.error+'</i>'):(r.reasons.join('; ')||'—'))+'</td></tr>';
+    if(can)h+='<tr class="det" id="det'+i+'" style="display:none"><td colspan="4">'+detailRows(r.features)+'</td></tr>';});
   h+='</table>'; document.getElementById('out').innerHTML=h;
 }
+function tgl(i){const d=document.getElementById('det'+i),c=document.getElementById('cr'+i);
+  if(!d)return; const open=d.style.display!=='none';
+  d.style.display=open?'none':'table-row'; if(c)c.textContent=open?'▸':'▾';}
 async function update(){
   const b=document.getElementById('updBtn'); b.disabled=true; b.textContent='Actualizando…';
   const n=document.getElementById('updNote');
@@ -325,7 +391,7 @@ const VEC={
  V6_encoding:"Codificación: uso de base64/hex para ocultar cargas o URLs maliciosas.",
  V7_network_exfiltration:"Exfiltración de red: conexiones para descargar o enviar datos (URLs, sockets, requests). Detectado por AST."};
 async function loadDash(){
-  renderSession();
+  renderSession(); renderHist();
   if(dashLoaded) return;
   const r=await fetch('/api/metrics'); const d=await r.json();
   const m=d.metrics, sel=m?m.selected_model:null, cv=(m&&sel)?m.cv_results[sel]:null, ho=m?m.holdout:null;
@@ -375,8 +441,47 @@ async function loadDash(){
     '<table class="cm"><tr><th></th><th>Pred. Malicioso</th><th>Pred. Benigno</th></tr>'+
     '<tr><th>Real Malicioso</th><td class="vp" data-tip="'+T.vp+'">VP '+c.tp+'</td><td class="fn" data-tip="'+T.fn+'">FN '+c.fn+'</td></tr>'+
     '<tr><th>Real Benigno</th><td class="fp" data-tip="'+T.fp+'">FP '+c.fp+'</td><td class="vn" data-tip="'+T.vn+'">VN '+c.tn+'</td></tr></table>';}
+  // Comparativa pyscan vs GuardDog / ClamAV
+  const MK=['recall','precision','f1','false_positive_rate'], ML=['Recall','Precisión','F1','Falsos pos.'];
+  let pys=null; const others=[];
+  if(d.guarddog){pys=d.guarddog.pyscan; if(d.guarddog.guarddog)others.push({label:'GuardDog (reglas)',m:d.guarddog.guarddog,c:'#E8791E'});}
+  if(d.antivirus){pys=pys||d.antivirus.pyscan; if(d.antivirus.clamav)others.push({label:'ClamAV (antivirus)',m:d.antivirus.clamav,c:'#7a7f8a'});}
+  if(pys){const ds=[{label:'pyscan (ML)',data:MK.map(k=>pys[k]),backgroundColor:'#1F3864'}];
+    for(const o of others)ds.push({label:o.label,data:MK.map(k=>o.m[k]),backgroundColor:o.c});
+    new Chart(document.getElementById('chCmp'),{type:'bar',
+      data:{labels:ML,datasets:ds},
+      options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
+        label:c=>c.dataset.label+': '+c.parsed.y.toFixed(3),
+        afterLabel:c=>c.dataIndex===3?wrap('En Falsos positivos, más bajo es mejor.'):[]}}},
+        scales:{y:{beginAtZero:true,max:1}}}});
+  }else{const n=document.getElementById('cmpNote'); n.style.display='block';
+    n.textContent='Corre experiment_compare_guarddog.py y experiment_compare_antivirus.py para poblar esta comparación.';}
+  // Importancia de características
+  if(m&&m.feature_importance){const fi=m.feature_importance;const ks=Object.keys(fi);
+    new Chart(document.getElementById('chImp'),{type:'bar',
+      data:{labels:ks.map(k=>FEAT[k]?FEAT[k].l:k),datasets:[{data:ks.map(k=>fi[k]),backgroundColor:'#2E5C9E'}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>'importancia '+Number(c.parsed.x).toFixed(3),
+        afterLabel:c=>FEAT[ks[c.dataIndex]]?wrap(FEAT[ks[c.dataIndex]].d):[]}}},
+        scales:{x:{beginAtZero:true}}}});}
   dashLoaded=true;
 }
+function renderHist(){const el=document.getElementById('hist'); if(!el)return;
+  if(!history.length){el.innerHTML='<i>Aún no has analizado nada en esta sesión.</i>';return;}
+  let h='<table><tr><th>Hora</th><th>Paquete</th><th>Veredicto</th><th>Score</th><th>Motivos</th></tr>';
+  for(const r of history){h+='<tr><td>'+r.time+'</td><td><b>'+r.package+'</b> '+(r.version||'')+'</td><td>'+
+    badge(r.verdict)+'</td><td>'+(r.score!=null?r.score:'—')+'</td><td>'+(r.error||r.reasons.join('; ')||'—')+'</td></tr>';}
+  el.innerHTML=h+'</table>';}
+function downloadHist(fmt){
+  if(!history.length){alert('No hay nada que exportar todavía.');return;}
+  let blob,name;
+  if(fmt==='json'){blob=new Blob([JSON.stringify(history,null,2)],{type:'application/json'});name='pyscan_historial.json';}
+  else{const hdr=['hora','paquete','version','veredicto','score','motivos'];
+    const rows=history.map(r=>[r.time,r.package,r.version||'',r.verdict,r.score!=null?r.score:'',
+      (r.error||r.reasons.join(' | '))].map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(','));
+    blob=new Blob([hdr.join(',')+'\n'+rows.join('\n')],{type:'text/csv'});name='pyscan_historial.csv';}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);}
 function renderSession(){
   document.getElementById('sess').innerHTML=
     '<div class="kpis" style="margin:0">'+kpi(sess.analizados,'analizados')+
