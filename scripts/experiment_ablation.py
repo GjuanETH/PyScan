@@ -48,24 +48,20 @@ import train_model as tm  # noqa: E402
 
 OUT_DIR = config.DATA_DIR / "analysis"
 
-# Grupos de características (deben coincidir con FeatureVector).
+# Grupos de características (deben coincidir con FeatureVector, 9 características).
 GROUPS = {
     "nombre": ["name_min_distance", "is_typosquat", "has_combo_affix"],
-    "metadatos": ["author_present", "maintainer_count", "release_count",
-                  "requires_count", "has_long_description"],
     "entropia": ["entropy_max", "entropy_mean", "entropy_suspicious_windows"],
     "ast": ["ast_dangerous_calls", "ast_network_literals", "ast_has_install_hook"],
 }
 
 # Configuraciones a evaluar: nombre -> lista de grupos incluidos.
 CONFIGS = {
-    "Todas (baseline)": ["nombre", "metadatos", "entropia", "ast"],
+    "Todas (baseline)": ["nombre", "entropia", "ast"],
     "Solo nombre": ["nombre"],
-    "Sin nombre (prueba de fuga)": ["metadatos", "entropia", "ast"],
-    "Solo código (AST + entropía)": ["entropia", "ast"],
+    "Sin nombre (solo código)": ["entropia", "ast"],
     "Solo AST": ["ast"],
     "Solo entropía": ["entropia"],
-    "Solo metadatos (sin nombre)": ["metadatos"],
 }
 
 

@@ -25,13 +25,11 @@ def build_features(
                                      if typosquat.min_distance is not None else 99)
         fv.is_typosquat = 1.0 if typosquat.is_typosquat else 0.0
         fv.has_combo_affix = 1.0 if typosquat.has_combo_affix else 0.0
-        fv.author_present = 1.0 if typosquat.author_present else 0.0
-        fv.maintainer_count = float(typosquat.maintainer_count)
 
-    if metadata is not None:
-        fv.release_count = float(len(metadata.releases))
-        fv.requires_count = float(len(metadata.requires_dist))
-        fv.has_long_description = 1.0 if metadata.has_long_description else 0.0
+    # NOTA: las características de metadatos de publicación (releases, requires,
+    # descripción, autor/mantenedores) se retiraron del vector por ser inertes
+    # durante el entrenamiento (importancia 0). El parámetro `metadata` se
+    # conserva por compatibilidad de la interfaz, pero ya no aporta características.
 
     if entropy is not None:
         fv.entropy_max = float(entropy.max)

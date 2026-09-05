@@ -105,3 +105,55 @@ def test_scan_with_model_and_sarif(monkeypatch, tmp_path):
     import json
     doc = json.loads(sarif_file.read_text(encoding="utf-8"))
     assert any(r["ruleId"] == "PS100" for r in doc["runs"][0]["results"])
+
+
+# --- Modos de escaneo múltiple / requirements / local -------------------
+def test_parse_requirements(tmp_path):
+    from pyscan.cli import _parse_requirements
+    req = tmp_path / "requirements.txt"
+    req.write_text(
+        "# comentario\n"
+        "requests==2.31.0\n"
+        "flask>=2,<3\n"
+        "numpy\n"
+        "django[argon2]==4.2  # inline\n"
+        "-e .\n"
+        "pywin32 ; sys_platform == 'win32'\n"
+        "\n",
+        encoding="utf-8")
+    names = _parse_requirements(req)
+    assert names == ["requests", "flask", "numpy", "django", "pywin32"]
+
+
+def test_scan_multiple_with_summary(monkeypatch, tmp_path):
+    (tmp_path / "mod.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(cli, "fetch", lambda *a, **k: _fake_result(tmp_path))
+    res = runner.invoke(app, ["scan", "reqursts", "djnago"])
+    assert res.exit_code == 0
+    assert "RESUMEN: 2 analizados" in res.stdout
+
+
+def test_scan_requirements_file(monkeypatch, tmp_path):
+    (tmp_path / "mod.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(cli, "fetch", lambda *a, **k: _fake_result(tmp_path))
+    req = tmp_path / "requirements.txt"
+    req.write_text("requests==2.31.0\nflask\n", encoding="utf-8")
+    res = runner.invoke(app, ["scan", "-r", str(req)])
+    assert res.exit_code == 0
+    assert "RESUMEN: 2 analizados" in res.stdout
+
+
+def test_scan_local_directory(tmp_path):
+    pkg = tmp_path / "reqursts-1.0"
+    pkg.mkdir()
+    (pkg / "mod.py").write_text("import os\nos.system('x')\n", encoding="utf-8")
+    res = runner.invoke(app, ["scan", "--local", str(pkg)])
+    # sin modelo: exit 0, pero muestra el análisis local (llamadas peligrosas)
+    assert res.exit_code == 0
+    assert "reqursts" in res.stdout
+    assert "os.system" in res.stdout
+
+
+def test_scan_no_target_errors():
+    res = runner.invoke(app, ["scan"])
+    assert res.exit_code == 2

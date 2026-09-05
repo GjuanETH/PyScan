@@ -77,26 +77,26 @@ class TyposquatReport(BaseModel):
 
 # --- Características y predicción ------------------------------------------
 class FeatureVector(BaseModel):
-    """Vector numérico consolidado que entra al clasificador.
+    """Vector numérico consolidado (9 características) que entra al clasificador.
 
-    Por ahora solo se llenan las características del extractor de metadatos
-    (Sprint 1-2). Las de entropía y AST se incorporan en sprints posteriores.
+    Solo incluye señales que se pueblan de forma consistente en entrenamiento e
+    inferencia: nombre (typosquatting), entropía y AST. Las señales de metadatos
+    de publicación (releases, dependencias, descripción, autor/mantenedores) se
+    retiraron por ser inertes durante el entrenamiento —el pipeline extrae las
+    características desde los artefactos descargados, sin metadatos de PyPI— lo
+    que las dejaba constantes y con importancia nula. Ver docs y el estudio de
+    ablación.
     """
 
-    # metadatos / typosquat
+    # nombre / typosquat
     name_min_distance: float = 99.0
     is_typosquat: float = 0.0
     has_combo_affix: float = 0.0
-    author_present: float = 1.0
-    maintainer_count: float = 0.0
-    release_count: float = 0.0
-    requires_count: float = 0.0
-    has_long_description: float = 0.0
-    # entropía (placeholder hasta Sprint 3)
+    # entropía
     entropy_max: float = 0.0
     entropy_mean: float = 0.0
     entropy_suspicious_windows: float = 0.0
-    # AST (placeholder hasta Sprint 4)
+    # AST
     ast_dangerous_calls: float = 0.0
     ast_network_literals: float = 0.0
     ast_has_install_hook: float = 0.0

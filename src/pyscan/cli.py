@@ -1,21 +1,27 @@
 """Interfaz de línea de comandos del MVP.
 
 Comandos:
-  pyscan scan <paquete> [--version X]   Descarga de PyPI y analiza el paquete.
-  pyscan check-name <nombre>            Analiza SOLO el nombre (offline, sin descargar).
-  pyscan info <paquete>                 Muestra solo los metadatos de PyPI.
-  pyscan version                        Muestra la versión.
+  pyscan scan <paquete> [<paquete>...]        Descarga de PyPI y analiza uno o varios paquetes.
+  pyscan scan -r requirements.txt             Analiza todas las dependencias de un proyecto.
+  pyscan scan -l ./paquete.tar.gz             Analiza un archivo o carpeta LOCAL (sin descargar).
+  pyscan check-name <nombre>                  Analiza SOLO el nombre (offline, sin descargar).
+  pyscan info <paquete>                       Muestra solo los metadatos de PyPI.
+  pyscan version                              Muestra la versión.
+
+`scan` acepta cualquier combinación de nombres, --requirements y --local, y al
+analizar más de un paquete imprime un resumen consolidado.
 
 Códigos de salida de `scan` (aptos para CI):
-  0 = benigno / sin veredicto, 1 = error de análisis, 2 = veredicto MALICIOSO.
+  0 = todo benigno / sin veredicto, 1 = hubo errores, 2 = al menos uno MALICIOSO.
 
 En Windows, ejecutar como módulo:  python -m pyscan.cli <comando> ...
 """
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 
@@ -23,13 +29,93 @@ from . import __version__
 from .classifier import ModelNotAvailable, predict
 from .extractors import ASTExtractor, EntropyExtractor, MetadataExtractor
 from .features import build_features
-from .fetcher import FetchError, fetch, get_pypi_json, parse_metadata
+from .fetcher import (FetchError, fetch, fetch_from_local, get_pypi_json,
+                     parse_metadata)
 from .models import Package, ScanReport, Verdict
 from .sarif import to_sarif_json
 
 app = typer.Typer(add_completion=False, help="pyscan: detección de paquetes maliciosos en PyPI.")
 
+_ARCHIVE_EXTS = (".tar.gz", ".tgz", ".whl", ".zip", ".egg", ".tar")
 
+
+# --- Motor reutilizable ---------------------------------------------------
+def _analyze(name: str, extracted_path: Path, report: ScanReport,
+             metadata=None, model_path: Optional[Path] = None) -> Optional[str]:
+    """Aplica los extractores + features + predicción sobre un directorio ya extraído.
+
+    Rellena `report` y devuelve un aviso de ML si el modelo no está disponible.
+    """
+    extractor = MetadataExtractor()
+    report.typosquat = extractor.extract(name, metadata)
+    report.entropy = EntropyExtractor().extract(extracted_path)
+    report.ast = ASTExtractor().extract(extracted_path)
+    report.features = build_features(typosquat=report.typosquat, metadata=metadata,
+                                     entropy=report.entropy, ast=report.ast)
+    if report.features is not None:
+        try:
+            report.prediction = predict(report.features, model_path=model_path)
+        except ModelNotAvailable as exc:
+            return str(exc)
+    return None
+
+
+def _scan_pypi(name: str, version: Optional[str],
+               model_path: Optional[Path]) -> tuple[ScanReport, Optional[str]]:
+    report = ScanReport(package=Package(name=name, version=version or "unknown"))
+    try:
+        result = fetch(name, version)
+        report.package = result.package
+        report.metadata = result.metadata
+        note = _analyze(result.package.name, result.extracted_path, report,
+                        metadata=result.metadata, model_path=model_path)
+        return report, note
+    except FetchError as exc:
+        report.errors.append(str(exc))
+        # Al menos el análisis del nombre (offline).
+        report.typosquat = MetadataExtractor().extract(name)
+        report.features = build_features(typosquat=report.typosquat)
+        return report, None
+
+
+def _scan_local(path: Path, model_path: Optional[Path]) -> tuple[ScanReport, Optional[str]]:
+    name = _name_from_path(path)
+    report = ScanReport(package=Package(name=name, version="local"))
+    try:
+        extracted = path if path.is_dir() else fetch_from_local(path)
+        note = _analyze(name, extracted, report, model_path=model_path)
+        return report, note
+    except (FetchError, OSError) as exc:
+        report.errors.append(str(exc))
+        return report, None
+
+
+def _name_from_path(path: Path) -> str:
+    stem = path.name
+    for ext in _ARCHIVE_EXTS:
+        if stem.lower().endswith(ext):
+            stem = stem[: -len(ext)]
+            break
+    m = re.match(r"^(?P<n>.+?)-\d", stem)
+    return (m.group("n") if m else stem).lower().replace("_", "-")
+
+
+def _parse_requirements(path: Path) -> List[str]:
+    """Extrae los nombres de paquete de un requirements.txt (ignora versiones/opciones)."""
+    names: List[str] = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or line.startswith("-"):
+            continue
+        line = line.split("#", 1)[0].strip()   # comentario en línea
+        line = line.split(";", 1)[0].strip()   # marcador de entorno
+        m = re.match(r"^([A-Za-z0-9._-]+)", line)
+        if m:
+            names.append(m.group(1))
+    return names
+
+
+# --- Comandos -------------------------------------------------------------
 @app.command()
 def version() -> None:
     """Muestra la versión de pyscan."""
@@ -65,104 +151,151 @@ def info(name: str, version: Optional[str] = typer.Option(None, "--version", "-v
 
 @app.command()
 def scan(
-    name: str,
+    names: Optional[List[str]] = typer.Argument(
+        None, help="Uno o varios paquetes de PyPI a analizar."),
     version: Optional[str] = typer.Option(None, "--version", "-v",
-                                          help="Versión específica del paquete."),
-    json_only: bool = typer.Option(False, "--json", help="Imprime solo el JSON del reporte."),
+                                          help="Versión (solo si se indica un único paquete)."),
+    requirements: Optional[Path] = typer.Option(
+        None, "--requirements", "-r", help="Analiza todas las dependencias de un requirements.txt."),
+    local: Optional[List[Path]] = typer.Option(
+        None, "--local", "-l", help="Archivo (.tar.gz/.whl) o carpeta LOCAL a analizar (repetible)."),
+    json_only: bool = typer.Option(False, "--json", help="Imprime el reporte en JSON."),
     sarif_path: Optional[Path] = typer.Option(
-        None, "--sarif", help="Escribe además el reporte en formato SARIF 2.1.0."),
+        None, "--sarif", help="Escribe el reporte agregado en formato SARIF 2.1.0."),
     model_path: Optional[Path] = typer.Option(
         None, "--model", help="Ruta a un bundle de modelo alternativo (.joblib)."),
 ) -> None:
-    """Descarga un paquete de PyPI y ejecuta el análisis estático completo."""
-    report = ScanReport(package=Package(name=name, version=version or "unknown"))
-    extractor = MetadataExtractor()
-    ml_note: Optional[str] = None
-    try:
-        result = fetch(name, version)
-        report.package = result.package
-        report.metadata = result.metadata
-        report.typosquat = extractor.extract(result.package.name, result.metadata)
-        report.entropy = EntropyExtractor().extract(result.extracted_path)
-        report.ast = ASTExtractor().extract(result.extracted_path)
-        report.features = build_features(typosquat=report.typosquat,
-                                         metadata=result.metadata,
-                                         entropy=report.entropy,
-                                         ast=report.ast)
-    except FetchError as exc:
-        report.errors.append(str(exc))
-        report.typosquat = extractor.extract(name)
-        report.features = build_features(typosquat=report.typosquat)
-        typer.secho(str(exc), fg=typer.colors.RED, err=True)
+    """Analiza uno o varios paquetes (por nombre, requirements.txt o locales)."""
+    names = list(names or [])
+    local = list(local or [])
+    if requirements is not None:
+        if not requirements.exists():
+            typer.secho(f"No existe {requirements}", fg=typer.colors.RED, err=True)
+            raise typer.Exit(code=1)
+        names.extend(_parse_requirements(requirements))
+    if not names and not local:
+        typer.secho("Indica al menos un paquete, --requirements o --local.",
+                    fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2)
 
-    # Veredicto del clasificador supervisado (decisión final por ML).
-    if report.features is not None and not report.errors:
-        try:
-            report.prediction = predict(report.features, model_path=model_path)
-        except ModelNotAvailable as exc:
-            ml_note = str(exc)
+    single = (len(names) == 1 and not local)
+    results: list[tuple[ScanReport, Optional[str]]] = []
+    for name in names:
+        results.append(_scan_pypi(name, version if single else None, model_path))
+    for path in local:
+        results.append(_scan_local(path, model_path))
+
+    reports = [r for r, _ in results]
+    multiple = len(reports) > 1
+
+    if json_only:
+        import json as _json
+        payload = ([_json.loads(r.to_json()) for r in reports] if multiple
+                   else _json.loads(reports[0].to_json()))
+        typer.echo(_json.dumps(payload, indent=2, ensure_ascii=False))
+    else:
+        for report, note in results:
+            _print_human(report, note)
+        if multiple:
+            _print_summary(reports)
 
     if sarif_path is not None:
-        sarif_path.parent.mkdir(parents=True, exist_ok=True)
-        sarif_path.write_text(to_sarif_json(report), encoding="utf-8")
+        _write_aggregate_sarif(reports, sarif_path)
         if not json_only:
             typer.echo(f"SARIF escrito en: {sarif_path}")
 
-    is_malicious = (report.prediction is not None
-                    and report.prediction.verdict == Verdict.MALICIOUS)
-    exit_code = 1 if report.errors else (2 if is_malicious else 0)
-
-    if json_only:
-        typer.echo(report.to_json())
-        raise typer.Exit(code=exit_code)
-
-    _print_human(report, ml_note)
-    raise typer.Exit(code=exit_code)
+    any_error = any(r.errors for r in reports)
+    any_malicious = any(r.prediction and r.prediction.verdict == Verdict.MALICIOUS for r in reports)
+    raise typer.Exit(code=1 if any_error else (2 if any_malicious else 0))
 
 
-def _print_human(report: ScanReport, ml_note: Optional[str] = None) -> None:
+# --- Presentación ---------------------------------------------------------
+def _verdict_cell(report: ScanReport) -> str:
+    if report.errors:
+        return typer.style("error", fg=typer.colors.RED)
+    if report.prediction is None:
+        return typer.style("sin modelo", fg=typer.colors.BLUE)
+    if report.prediction.verdict == Verdict.MALICIOUS:
+        return typer.style("MALICIOSO", fg=typer.colors.RED, bold=True)
+    return typer.style("benigno", fg=typer.colors.GREEN)
+
+
+def _print_human(report: ScanReport, note: Optional[str] = None) -> None:
     p = report.package
     typer.secho(f"\nPaquete: {p.name} {p.version}", bold=True)
-    if p.sha256:
-        typer.echo(f"  sha256: {p.sha256}")
+    if report.errors:
+        for e in report.errors:
+            typer.secho(f"  error: {e}", fg=typer.colors.RED)
     if report.typosquat:
         t = report.typosquat
         flag = (typer.style("SOSPECHOSO", fg=typer.colors.YELLOW)
                 if t.is_typosquat else "ok")
         typer.echo(f"  typosquat: {flag} | distancia mínima={t.min_distance} "
                    f"| parecido a '{t.similar_package}'")
-        if t.has_combo_affix:
-            typer.echo(f"  combosquatting: afijos detectados -> {', '.join(t.suffixes)}")
     if report.entropy:
         e = report.entropy
-        ef = (typer.style(f"{e.suspicious_windows} ventanas >7.0", fg=typer.colors.YELLOW)
+        ef = (typer.style(f"{e.suspicious_windows} ventanas altas", fg=typer.colors.YELLOW)
               if e.suspicious_windows else "sin ventanas sospechosas")
-        typer.echo(f"  entropía: max={e.max} media={e.mean} | {ef}")
+        typer.echo(f"  entropía: max={e.max} | {ef}")
     if report.ast:
         a = report.ast
         n = len(a.dangerous_calls)
         af = (typer.style(f"{n} llamadas peligrosas", fg=typer.colors.YELLOW)
               if n else "sin llamadas peligrosas")
-        typer.echo(f"  AST: {af}"
-                   + (f" -> {', '.join(a.dangerous_calls[:6])}" if n else ""))
+        typer.echo(f"  AST: {af}" + (f" -> {', '.join(a.dangerous_calls[:6])}" if n else ""))
         if a.has_install_hook:
             typer.secho("       hook de instalación en setup.py", fg=typer.colors.YELLOW)
         if a.network_literals:
             typer.echo(f"       literales de red: {len(a.network_literals)}")
     if report.prediction:
         pr = report.prediction
-        if pr.verdict == Verdict.MALICIOUS:
-            verdict_txt = typer.style("MALICIOSO", fg=typer.colors.RED, bold=True)
-        else:
-            verdict_txt = typer.style("benigno", fg=typer.colors.GREEN)
-        typer.echo(f"  ML: {verdict_txt} | score={pr.score:.4f}")
-        top = sorted(pr.feature_importance.items(), key=lambda x: -x[1])[:3]
-        if top:
-            typer.echo("       señales principales: "
-                       + ", ".join(f"{k}={v:.3f}" for k, v in top))
-    elif ml_note:
-        typer.secho(f"  ML: sin veredicto — {ml_note}", fg=typer.colors.BLUE)
+        typer.echo(f"  ML: {_verdict_cell(report)} | score={pr.score:.4f}")
+    elif note:
+        typer.secho(f"  ML: sin veredicto — {note}", fg=typer.colors.BLUE)
     typer.echo("")
+
+
+def _print_summary(reports: list[ScanReport]) -> None:
+    total = len(reports)
+    mal = sum(1 for r in reports if r.prediction and r.prediction.verdict == Verdict.MALICIOUS)
+    err = sum(1 for r in reports if r.errors)
+    typer.secho("=" * 52, fg=typer.colors.BRIGHT_BLACK)
+    typer.secho(f"RESUMEN: {total} analizados | "
+                + typer.style(f"{mal} maliciosos", fg=typer.colors.RED, bold=(mal > 0))
+                + f" | {err} con error", bold=True)
+    flagged = [r for r in reports
+               if (r.prediction and r.prediction.verdict == Verdict.MALICIOUS)
+               or (r.typosquat and r.typosquat.is_typosquat)
+               or (r.ast and r.ast.has_install_hook)]
+    if flagged:
+        typer.secho("\nA revisar:", bold=True)
+        for r in flagged:
+            razones = []
+            if r.prediction and r.prediction.verdict == Verdict.MALICIOUS:
+                razones.append(f"ML score {r.prediction.score:.2f}")
+            if r.typosquat and r.typosquat.is_typosquat:
+                razones.append(f"typosquat de '{r.typosquat.similar_package}'")
+            if r.ast and r.ast.has_install_hook:
+                razones.append("hook de instalación")
+            if r.ast and r.ast.dangerous_calls:
+                razones.append(f"{len(r.ast.dangerous_calls)} llamadas peligrosas")
+            typer.echo(f"  - {_verdict_cell(r)}  {r.package.name} {r.package.version}"
+                       f"  ({'; '.join(razones)})")
+    else:
+        typer.secho("\nNingún paquete resultó sospechoso.", fg=typer.colors.GREEN)
+    typer.echo("")
+
+
+def _write_aggregate_sarif(reports: list[ScanReport], sarif_path: Path) -> None:
+    import json as _json
+    runs = []
+    for r in reports:
+        runs.extend(_json.loads(to_sarif_json(r))["runs"])
+    aggregate = {"$schema": ("https://raw.githubusercontent.com/oasis-tcs/sarif-spec/"
+                             "master/Schemata/sarif-schema-2.1.0.json"),
+                 "version": "2.1.0", "runs": runs}
+    sarif_path.parent.mkdir(parents=True, exist_ok=True)
+    sarif_path.write_text(_json.dumps(aggregate, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":  # pragma: no cover

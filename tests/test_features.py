@@ -9,17 +9,17 @@ def test_build_features_from_metadata():
     typo = TyposquatReport(min_distance=1, similar_package="requests",
                            is_typosquat=True, has_combo_affix=True,
                            author_present=False, maintainer_count=2)
+    # metadata se conserva por compatibilidad pero ya no aporta características.
     md = PackageMetadata(releases=["1.0", "1.1"], requires_dist=["x"],
                          has_long_description=True)
     fv = build_features(typosquat=typo, metadata=md)
     assert fv.name_min_distance == 1.0
     assert fv.is_typosquat == 1.0
     assert fv.has_combo_affix == 1.0
-    assert fv.author_present == 0.0
-    assert fv.maintainer_count == 2.0
-    assert fv.release_count == 2.0
-    assert fv.requires_count == 1.0
-    assert fv.has_long_description == 1.0
+    # El vector ya no expone características de metadatos de publicación.
+    assert not hasattr(fv, "release_count")
+    assert not hasattr(fv, "author_present")
+    assert len(fv.to_row()) == 9
 
 
 def test_build_features_missing_distance_uses_sentinel():
