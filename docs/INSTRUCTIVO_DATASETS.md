@@ -113,6 +113,38 @@ cp -r datasets_raw/malregistry/* data/malicious/malregistry/
 
 `build_dataset.py` encontrará tanto los `.tar.gz` como las carpetas con `.py`.
 
+### 3.3 Backstabber's Knife Collection y MalOSS → importador genérico
+
+`import_dataset.py` integra cualquier fuente nueva (deduplica por `sha256`, nunca
+ejecuta código). Sirve para estas dos y para futuras.
+
+```bash
+# Backstabber's: los artefactos suelen venir en ZIP cifrados (contraseña 'infected')
+python scripts/import_dataset.py --src datasets_raw/backstabbers \
+    --source backstabbers --password infected --path-filter pypi --include-dirs
+
+# MalOSS: archivos o carpetas; se filtra solo la parte de PyPI
+python scripts/import_dataset.py --src datasets_raw/maloss \
+    --source maloss --path-filter pypi --include-dirs
+```
+
+Cada fuente queda en `data/malicious/<source>/` y `build_dataset.py` la detecta
+sola (registra el `source` para auditar el balance por origen).
+
+### 3.4 Segunda fuente benigna → muestra aleatoria de PyPI
+
+Para no sesgar el modelo hacia paquetes "populares y maduros", se agrega una
+muestra **aleatoria** del índice completo de PyPI (además del Top):
+
+```bash
+python scripts/fetch_random_pypi.py --limit 1000 --seed 42
+python scripts/collect_benign.py --names-file data/random_pypi_names.txt \
+    --out data/benign/pypi_random --limit 1000
+```
+
+Con esto el dataset queda con **6 fuentes**: 4 maliciosas (DataDog, Malregistry,
+Backstabber's, MalOSS) y 2 benignas (Top-PyPI y muestra aleatoria).
+
 ---
 
 ## 4. Unificar, deduplicar y balancear
