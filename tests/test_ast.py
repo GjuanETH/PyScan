@@ -97,3 +97,12 @@ def test_broken_syntax_is_skipped(tmp_path: Path):
     (tmp_path / "ok.py").write_text("import os\nos.system('x')\n", encoding="utf-8")
     rep = ASTExtractor().extract(tmp_path)
     assert "os.system" in rep.dangerous_calls  # el archivo válido sí se procesa
+
+
+def test_findings_have_file_and_line(tmp_path: Path):
+    """Cada hallazgo peligroso trae su ubicación (archivo:línea)."""
+    (tmp_path / "mod.py").write_text(MALICIOUS, encoding="utf-8")
+    rep = ASTExtractor().extract(tmp_path)
+    calls = [f for f in rep.findings if f.kind == "dangerous_call"]
+    assert calls
+    assert all(f.line > 0 and f.file == "mod.py" for f in calls)

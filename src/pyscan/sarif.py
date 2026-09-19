@@ -23,17 +23,23 @@ _RULES = {
     "PS004": "Lógica personalizada de instalación en setup.py (cmdclass/install).",
     "PS005": "URLs o direcciones IP embebidas en el código.",
     "PS100": "El clasificador supervisado predice que el paquete es malicioso.",
+    "PS200": "Paquete legítimo sugerido como alternativa segura.",
 }
 
 
-def _result(rule_id: str, level: str, message: str, artifact: str) -> dict:
+def _result(rule_id: str, level: str, message: str, artifact: str,
+            file: str = "", line: int = 0) -> dict:
+    location: dict = {"logicalLocations": [{"fullyQualifiedName": artifact}]}
+    if file:
+        location["physicalLocation"] = {
+            "artifactLocation": {"uri": file},
+            "region": {"startLine": max(1, line)},
+        }
     return {
         "ruleId": rule_id,
         "level": level,
         "message": {"text": message},
-        "locations": [{
-            "logicalLocations": [{"fullyQualifiedName": artifact}],
-        }],
+        "locations": [location],
     }
 
 
@@ -60,21 +66,38 @@ def to_sarif(report: ScanReport) -> dict:
 
     a = report.ast
     if a:
-        if a.dangerous_calls:
+        dc = [f for f in a.findings if f.kind == "dangerous_call"][:20]
+        nw = [f for f in a.findings if f.kind == "network"][:20]
+        hooks = [f for f in a.findings if f.kind == "install_hook"]
+        if dc:
+            for f in dc:
+                results.append(_result(
+                    "PS003", "warning", f"Llamada peligrosa: {f.name}.",
+                    artifact, file=f.file, line=f.line))
+        elif a.dangerous_calls:  # respaldo sin ubicación
             results.append(_result(
                 "PS003", "warning",
-                "Llamadas peligrosas: " + ", ".join(a.dangerous_calls) + ".",
-                artifact))
-        if a.has_install_hook:
+                "Llamadas peligrosas: " + ", ".join(a.dangerous_calls) + ".", artifact))
+        if hooks:
+            for f in hooks:
+                results.append(_result(
+                    "PS004", "warning",
+                    "setup.py define lógica de instalación personalizada "
+                    "(vector clásico de ejecución en `pip install`).",
+                    artifact, file=f.file, line=f.line))
+        elif a.has_install_hook:
             results.append(_result(
                 "PS004", "warning",
-                "setup.py define lógica de instalación personalizada "
-                "(vector clásico de ejecución en `pip install`).", artifact))
-        if a.network_literals:
+                "setup.py define lógica de instalación personalizada.", artifact))
+        if nw:
+            for f in nw:
+                results.append(_result(
+                    "PS005", "note", f"Literal de red embebido: {f.name}.",
+                    artifact, file=f.file, line=f.line))
+        elif a.network_literals:
             results.append(_result(
                 "PS005", "note",
-                f"{len(a.network_literals)} literal(es) de red embebidos.",
-                artifact))
+                f"{len(a.network_literals)} literal(es) de red embebidos.", artifact))
 
     p = report.prediction
     if p and p.verdict == Verdict.MALICIOUS:
@@ -82,6 +105,11 @@ def to_sarif(report: ScanReport) -> dict:
             "PS100", "error",
             f"Clasificador ML: MALICIOSO con probabilidad {p.score:.2f}.",
             artifact))
+
+    if report.suggestion:
+        results.append(_result(
+            "PS200", "note",
+            f"Alternativa legítima sugerida: '{report.suggestion}'.", artifact))
 
     return {
         "$schema": ("https://raw.githubusercontent.com/oasis-tcs/sarif-spec/"

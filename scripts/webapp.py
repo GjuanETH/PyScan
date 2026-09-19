@@ -40,7 +40,7 @@ app = Flask(__name__)
 def _report_dict(report: ScanReport, note) -> dict:
     r = {"package": report.package.name, "version": report.package.version,
          "verdict": "sin modelo", "score": None, "reasons": [], "error": None,
-         "features": None}
+         "features": None, "suggestion": report.suggestion}
     r["detail"] = None
     if report.features is not None:
         r["features"] = {k: round(float(v), 3)
@@ -52,12 +52,15 @@ def _report_dict(report: ScanReport, note) -> dict:
     # Evidencia concreta (qué, cuál, de dónde) para desglosar el veredicto.
     det = {"dangerous_calls": [], "network_literals": [], "imports": [],
            "install_hook": False, "typosquat_of": None, "typosquat_distance": None,
-           "entropy_max": None, "entropy_suspicious_windows": 0}
+           "entropy_max": None, "entropy_suspicious_windows": 0, "locations": []}
     if report.ast:
         det["dangerous_calls"] = _uniq(report.ast.dangerous_calls, 30)
         det["network_literals"] = _uniq(report.ast.network_literals, 30)
         det["imports"] = _uniq(report.ast.imports, 40)
         det["install_hook"] = bool(report.ast.has_install_hook)
+        det["locations"] = [{"kind": f.kind, "name": f.name, "file": f.file,
+                             "line": f.line}
+                            for f in report.ast.findings if f.kind != "network"][:15]
     if report.typosquat and report.typosquat.is_typosquat:
         det["typosquat_of"] = report.typosquat.similar_package
         det["typosquat_distance"] = report.typosquat.min_distance
@@ -254,6 +257,7 @@ td{padding:10px 12px;border-top:1px solid #eef1f7;font-size:14px;vertical-align:
 .ev li{margin:6px 0;line-height:1.5;}
 .chip{display:inline-block;background:#eef1f7;color:#33415c;border-radius:6px;padding:2px 7px;margin:2px 3px 2px 0;font-family:Consolas,monospace;font-size:12px;word-break:break-all;}
 .chip.bad{background:#fdecea;color:#b0331f;}
+.sugg{background:#e7f4ea;color:#1e6b3a;border-radius:8px;padding:9px 12px;margin:0 0 10px;font-size:13.5px;}
 .cards{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
 .panel{background:#fff;border-radius:12px;padding:16px 18px;box-shadow:0 1px 3px rgba(0,0,0,.06);}
 .panel h3{margin:0 0 12px;color:var(--navy);font-size:15px;}
@@ -409,6 +413,8 @@ function whyText(r){
 function detailRows(r){
   const f=r.features, det=r.detail||{};
   let h='<div class="why">'+whyText(r)+'</div>';
+  if(r.suggestion)h+='<div class="sugg">✅ ¿Querías instalar <b>'+esc(r.suggestion)+
+    '</b>? Es el paquete legítimo más parecido; revísalo como alternativa segura.</div>';
   // Evidencia concreta desmenuzada
   const ev=[];
   if(det.typosquat_of)ev.push('<b>Suplanta el nombre</b> de <code>'+esc(det.typosquat_of)+'</code>'+
@@ -420,6 +426,9 @@ function detailRows(r){
     ev.push('<b>Conexiones / URLs ('+det.network_literals.length+'):</b><br>'+chips(det.network_literals,'bad'));
   if(det.entropy_suspicious_windows)
     ev.push('<b>Entropía alta:</b> '+det.entropy_suspicious_windows+' ventana(s) sospechosa(s) (máx '+det.entropy_max+') → posible ofuscación');
+  if(det.locations&&det.locations.length)
+    ev.push('<b>Dónde (archivo:línea):</b><br>'+det.locations.map(l=>
+      '<span class="chip bad">'+esc(l.name)+' <i>'+esc(l.file)+':'+l.line+'</i></span>').join(' '));
   if(det.imports&&det.imports.length)
     ev.push('<b>Imports detectados:</b><br>'+chips(det.imports.slice(0,20)));
   if(ev.length)h+='<ul class="ev"><li>'+ev.join('</li><li>')+'</li></ul>';

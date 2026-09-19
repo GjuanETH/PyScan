@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Iterable, Optional
 
 from .. import config
-from ..models import ASTReport
+from ..models import ASTReport, Finding
 
 _URL_RE = re.compile(r"https?://[^\s\"'<>]+")
 _IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
@@ -50,11 +50,13 @@ def _call_name(node: ast.Call) -> Optional[str]:
 
 
 class _Visitor(ast.NodeVisitor):
-    def __init__(self) -> None:
+    def __init__(self, relfile: str = "") -> None:
         self.dangerous: set[str] = set()
         self.imports: set[str] = set()
         self.network: set[str] = set()
         self.has_install_hook = False
+        self.relfile = relfile
+        self.findings: list[Finding] = []
         # Mapa de alias local -> nombre real, para resistir evasiones del tipo
         # `import subprocess as sp; sp.run(...)` o `from os import system as s`.
         self._aliases: dict[str, str] = {}
@@ -90,33 +92,44 @@ class _Visitor(ast.NodeVisitor):
             is_bare_builtin = "." not in resolved and resolved in _DANGEROUS_LEAF
             if resolved in _DANGEROUS_DOTTED or is_bare_builtin:
                 self.dangerous.add(resolved)
+                self.findings.append(Finding(kind="dangerous_call", name=resolved,
+                                             file=self.relfile,
+                                             line=getattr(node, "lineno", 0)))
         self.generic_visit(node)
 
     def visit_Constant(self, node: ast.Constant) -> None:
         if isinstance(node.value, str):
+            line = getattr(node, "lineno", 0)
             for m in _URL_RE.findall(node.value):
                 self.network.add(m)
+                self.findings.append(Finding(kind="network", name=m,
+                                             file=self.relfile, line=line))
             for m in _IP_RE.findall(node.value):
                 # Evita falsos positivos triviales como números de versión.
                 self.network.add(m)
+                self.findings.append(Finding(kind="network", name=m,
+                                             file=self.relfile, line=line))
         self.generic_visit(node)
 
 
-def _detect_install_hook(tree: ast.AST) -> bool:
-    """Heurística: setup() con cmdclass o clases que extiendan *install*."""
+def _detect_install_hook(tree: ast.AST) -> Optional[int]:
+    """Heurística: setup() con cmdclass o clases que extiendan *install*.
+
+    Devuelve el número de línea del hallazgo, o None si no hay hook.
+    """
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             name = _call_name(node)
             if name and name.split(".")[-1] == "setup":
                 for kw in node.keywords:
                     if kw.arg in ("cmdclass",):
-                        return True
+                        return getattr(node, "lineno", 0)
         if isinstance(node, ast.ClassDef):
             for base in node.bases:
                 base_name = base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")
                 if "install" in str(base_name).lower():
-                    return True
-    return False
+                    return getattr(node, "lineno", 0)
+    return None
 
 
 class ASTExtractor:
@@ -138,6 +151,7 @@ class ASTExtractor:
         imports: set[str] = set()
         network: set[str] = set()
         install_hook = False
+        findings: list[Finding] = []
         for path in files:
             try:
                 source = path.read_text(encoding="utf-8", errors="replace")
@@ -145,21 +159,31 @@ class ASTExtractor:
             except (OSError, SyntaxError, ValueError):
                 # Código ilegible o intencionalmente roto: se omite ese archivo.
                 continue
+            try:
+                relfile = str(path.relative_to(root)) if root.is_dir() else path.name
+            except ValueError:
+                relfile = path.name
             # Un visitor por archivo: los alias de import son de ámbito local
             # al módulo y no deben contaminar el análisis de otros archivos.
-            visitor = _Visitor()
+            visitor = _Visitor(relfile)
             visitor.visit(tree)
             dangerous |= visitor.dangerous
             imports |= visitor.imports
             network |= visitor.network
-            if path.name == "setup.py" and _detect_install_hook(tree):
-                install_hook = True
+            findings.extend(visitor.findings)
+            if path.name == "setup.py":
+                hook_line = _detect_install_hook(tree)
+                if hook_line is not None:
+                    install_hook = True
+                    findings.append(Finding(kind="install_hook", name="setup()",
+                                            file=relfile, line=hook_line))
 
         return ASTReport(
             dangerous_calls=sorted(dangerous),
             imports=sorted(imports),
             network_literals=sorted(network),
             has_install_hook=install_hook,
+            findings=findings[:200],   # tope defensivo
         )
 
 

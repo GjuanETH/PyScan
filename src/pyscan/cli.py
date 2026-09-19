@@ -48,6 +48,8 @@ def _analyze(name: str, extracted_path: Path, report: ScanReport,
     """
     extractor = MetadataExtractor()
     report.typosquat = extractor.extract(name, metadata)
+    if report.typosquat.is_typosquat and report.typosquat.similar_package:
+        report.suggestion = report.typosquat.similar_package
     report.entropy = EntropyExtractor().extract(extracted_path)
     report.ast = ASTExtractor().extract(extracted_path)
     report.features = build_features(typosquat=report.typosquat, metadata=metadata,
@@ -74,6 +76,8 @@ def _scan_pypi(name: str, version: Optional[str],
         report.errors.append(str(exc))
         # Al menos el análisis del nombre (offline).
         report.typosquat = MetadataExtractor().extract(name)
+        if report.typosquat.is_typosquat and report.typosquat.similar_package:
+            report.suggestion = report.typosquat.similar_package
         report.features = build_features(typosquat=report.typosquat)
         return report, None
 
@@ -209,6 +213,42 @@ def scan(
     raise typer.Exit(code=1 if any_error else (2 if any_malicious else 0))
 
 
+@app.command()
+def precommit(
+    requirements: Optional[List[Path]] = typer.Argument(
+        None, help="Archivos requirements.txt a revisar (los pasa pre-commit)."),
+) -> None:
+    """Hook de pre-commit / CI: analiza los requirements y bloquea si hay riesgo.
+
+    Sale con código != 0 (bloquea el commit) si algún paquete resulta MALICIOSO
+    o sospechoso por typosquatting; 0 si todo está limpio.
+    """
+    reqs = [r for r in (requirements or []) if r.exists()]
+    names: List[str] = []
+    for r in reqs:
+        names.extend(_parse_requirements(r))
+    names = list(dict.fromkeys(names))
+    if not names:
+        raise typer.Exit(code=0)
+
+    results = [_scan_pypi(n, None, None) for n in names]
+    reports = [rep for rep, _ in results]
+    for rep, note in results:
+        _print_human(rep, note)
+    if len(reports) > 1:
+        _print_summary(reports)
+
+    flagged = [r for r in reports
+               if (r.prediction and r.prediction.verdict == Verdict.MALICIOUS)
+               or (r.typosquat and r.typosquat.is_typosquat)]
+    if flagged:
+        typer.secho(f"\npyscan bloqueó el commit: {len(flagged)} dependencia(s) "
+                    f"en riesgo.", fg=typer.colors.RED, bold=True)
+        raise typer.Exit(code=1)
+    typer.secho("pyscan: dependencias sin riesgo detectado.", fg=typer.colors.GREEN)
+    raise typer.Exit(code=0)
+
+
 # --- Presentación ---------------------------------------------------------
 def _verdict_cell(report: ScanReport) -> str:
     if report.errors:
@@ -247,11 +287,17 @@ def _print_human(report: ScanReport, note: Optional[str] = None) -> None:
             typer.secho("       hook de instalación en setup.py", fg=typer.colors.YELLOW)
         if a.network_literals:
             typer.echo(f"       literales de red: {len(a.network_literals)}")
+        # Ubicaciones concretas (archivo:línea) de los primeros hallazgos.
+        for f in [x for x in a.findings if x.kind != "network"][:6]:
+            typer.echo(f"       ↳ {f.name}  ({f.file}:{f.line})")
     if report.prediction:
         pr = report.prediction
         typer.echo(f"  ML: {_verdict_cell(report)} | score={pr.score:.4f}")
     elif note:
         typer.secho(f"  ML: sin veredicto — {note}", fg=typer.colors.BLUE)
+    if report.suggestion:
+        typer.secho(f"  Sugerencia: ¿querías instalar '{report.suggestion}'? "
+                    f"Es el paquete legítimo más parecido.", fg=typer.colors.CYAN)
     typer.echo("")
 
 

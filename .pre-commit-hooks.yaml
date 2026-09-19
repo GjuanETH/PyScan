@@ -1,0 +1,7 @@
+-   id: pyscan
+    name: pyscan - escaneo de dependencias maliciosas (PyPI)
+    description: Analiza los requirements.txt en busca de paquetes maliciosos o typosquatting y bloquea el commit si hay riesgo.
+    entry: pyscan precommit
+    language: python
+    files: (^|/)requirements.*\.txt$
+    pass_filenames: true

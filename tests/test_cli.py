@@ -157,3 +157,34 @@ def test_scan_local_directory(tmp_path):
 def test_scan_no_target_errors():
     res = runner.invoke(app, ["scan"])
     assert res.exit_code == 2
+
+
+def test_scan_suggests_legit_package(monkeypatch, tmp_path):
+    """Ante un typosquat, sugiere el paquete legítimo más parecido."""
+    (tmp_path / "mod.py").write_text("x = 1\n", encoding="utf-8")
+    monkeypatch.setattr(cli, "fetch", lambda *a, **k: _fake_result(tmp_path))
+    res = runner.invoke(app, ["scan", "reqursts"])
+    assert res.exit_code == 0
+    assert "requests" in res.stdout  # sugerencia de alternativa segura
+
+
+def test_precommit_blocks_typosquat(monkeypatch, tmp_path):
+    """El hook de pre-commit bloquea (exit != 0) ante un nombre sospechoso."""
+    def boom(*a, **k):
+        raise FetchError("no existe")
+    monkeypatch.setattr(cli, "fetch", boom)
+    req = tmp_path / "requirements.txt"
+    req.write_text("reqursts\n", encoding="utf-8")
+    res = runner.invoke(app, ["precommit", str(req)])
+    assert res.exit_code == 1
+
+
+def test_precommit_clean_passes(monkeypatch, tmp_path):
+    """Sin nombres de riesgo (offline), el hook no bloquea el commit."""
+    def boom(*a, **k):
+        raise FetchError("offline")
+    monkeypatch.setattr(cli, "fetch", boom)
+    req = tmp_path / "requirements.txt"
+    req.write_text("flask\n", encoding="utf-8")
+    res = runner.invoke(app, ["precommit", str(req)])
+    assert res.exit_code == 0

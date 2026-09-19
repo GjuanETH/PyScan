@@ -54,6 +54,15 @@ class EntropyReport(BaseModel):
     suspicious_windows: int = 0
 
 
+class Finding(BaseModel):
+    """Hallazgo localizado: qué se detectó y dónde (archivo y línea)."""
+
+    kind: str            # dangerous_call | network | install_hook
+    name: str            # p. ej. 'os.system', 'http://x', 'setup()'
+    file: str            # ruta relativa dentro del paquete
+    line: int = 0        # número de línea (0 si no aplica)
+
+
 class ASTReport(BaseModel):
     """Salida del recorrido de árboles de sintaxis abstracta."""
 
@@ -61,6 +70,9 @@ class ASTReport(BaseModel):
     imports: list[str] = Field(default_factory=list)
     network_literals: list[str] = Field(default_factory=list)
     has_install_hook: bool = False  # setup.py con lógica en install/cmdclass
+    # Hallazgos localizados (archivo:línea). Aditivo: no afecta al vector de
+    # características, que sigue usando los conteos de las listas anteriores.
+    findings: list[Finding] = Field(default_factory=list)
 
 
 class TyposquatReport(BaseModel):
@@ -125,6 +137,8 @@ class ScanReport(BaseModel):
     ast: Optional[ASTReport] = None
     features: Optional[FeatureVector] = None
     prediction: Optional[MLPrediction] = None
+    # Paquete legítimo sugerido como alternativa (p. ej. ante un typosquat).
+    suggestion: Optional[str] = None
     errors: list[str] = Field(default_factory=list)
 
     def to_json(self, indent: int = 2) -> str:
