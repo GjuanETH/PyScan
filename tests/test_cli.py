@@ -45,7 +45,10 @@ def test_scan_with_entropy_and_ast_human(monkeypatch, tmp_path):
         "import os\nos.system('x')\n" + "def f():\n    return 1\n" * 20,
         encoding="utf-8")
     monkeypatch.setattr(cli, "fetch", lambda *a, **k: _fake_result(tmp_path))
-    res = runner.invoke(app, ["scan", "reqursts"])
+    # --model inexistente: aísla la prueba de cualquier modelo entrenado en disco;
+    # aquí se valida la SALIDA del análisis (entropía/AST), no el veredicto.
+    res = runner.invoke(app, ["scan", "reqursts",
+                              "--model", str(tmp_path / "no_existe.joblib")])
     assert res.exit_code == 0
     assert "entropía" in res.stdout
     assert "AST" in res.stdout
@@ -147,8 +150,10 @@ def test_scan_local_directory(tmp_path):
     pkg = tmp_path / "reqursts-1.0"
     pkg.mkdir()
     (pkg / "mod.py").write_text("import os\nos.system('x')\n", encoding="utf-8")
-    res = runner.invoke(app, ["scan", "--local", str(pkg)])
-    # sin modelo: exit 0, pero muestra el análisis local (llamadas peligrosas)
+    # --model inexistente: la prueba valida el análisis local, no el veredicto ML,
+    # y así no depende de si hay un modelo entrenado en data/models/.
+    res = runner.invoke(app, ["scan", "--local", str(pkg),
+                              "--model", str(tmp_path / "no_existe.joblib")])
     assert res.exit_code == 0
     assert "reqursts" in res.stdout
     assert "os.system" in res.stdout
