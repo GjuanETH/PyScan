@@ -1,8 +1,6 @@
 configuracion,n_features,recall,precision,f1,pr_auc,false_positive_rate
-Todas (baseline),14,0.9605,0.977,0.9687,0.994,0.0226
-Solo nombre,3,0.9029,0.8328,0.8665,0.9549,0.1806
-Sin nombre (prueba de fuga),11,0.9087,0.936,0.9222,0.9734,0.0619
-Solo código (AST + entropía),6,0.9087,0.936,0.9222,0.9734,0.0619
-Solo AST,3,0.9249,0.765,0.8374,0.9094,0.2832
-Solo entropía,3,0.9074,0.8081,0.8549,0.941,0.2148
-Solo metadatos (sin nombre),5,1.0,0.4992,0.6659,0.4992,1.0
+Todas (baseline),9,0.9398,0.9248,0.9323,0.9827,0.0611
+Solo nombre,3,0.9159,0.6575,0.7655,0.7712,0.3819
+Sin nombre (solo código),6,0.9003,0.9182,0.9092,0.9698,0.0642
+Solo AST,3,0.9055,0.6988,0.7888,0.8715,0.3124
+Solo entropía,3,0.9016,0.7778,0.8351,0.9306,0.2062

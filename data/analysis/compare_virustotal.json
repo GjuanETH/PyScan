@@ -1,1 +1,79 @@
-{"n_samples":80,"n_malicious":40,"n_benign":40,"min_detections":2,"vt_hashes_found":31,"pyscan":{"recall":0.95,"precision":0.97,"f1":0.96,"false_positive_rate":0.025},"virustotal":{"recall":0.45,"precision":1.0,"f1":0.62,"false_positive_rate":0.0},"engines_top":{"Kaspersky":{"malware_detectado":15,"recall":0.375},"ESET-NOD32":{"malware_detectado":12,"recall":0.30}}}
+{
+  "n_samples": 80,
+  "n_malicious": 40,
+  "n_benign": 40,
+  "min_detections": 2,
+  "vt_hashes_found": 57,
+  "pyscan": {
+    "recall": 0.825,
+    "precision": 0.9429,
+    "f1": 0.88,
+    "false_positive_rate": 0.05,
+    "tp": 33,
+    "fp": 2,
+    "tn": 38,
+    "fn": 7
+  },
+  "virustotal": {
+    "recall": 0.55,
+    "precision": 1.0,
+    "f1": 0.7097,
+    "false_positive_rate": 0.0,
+    "tp": 22,
+    "fp": 0,
+    "tn": 40,
+    "fn": 18
+  },
+  "engines_top": {
+    "Kaspersky": {
+      "malware_detectado": 24,
+      "recall": 0.6
+    },
+    "ZoneAlarm": {
+      "malware_detectado": 17,
+      "recall": 0.425
+    },
+    "Ikarus": {
+      "malware_detectado": 6,
+      "recall": 0.15
+    },
+    "Google": {
+      "malware_detectado": 6,
+      "recall": 0.15
+    },
+    "ESET-NOD32": {
+      "malware_detectado": 3,
+      "recall": 0.075
+    },
+    "Tencent": {
+      "malware_detectado": 3,
+      "recall": 0.075
+    },
+    "Rising": {
+      "malware_detectado": 3,
+      "recall": 0.075
+    },
+    "alibabacloud": {
+      "malware_detectado": 3,
+      "recall": 0.075
+    },
+    "TrendMicro": {
+      "malware_detectado": 2,
+      "recall": 0.05
+    },
+    "Lionic": {
+      "malware_detectado": 2,
+      "recall": 0.05
+    }
+  },
+  "recall_by_source": {
+    "datadog": {
+      "pyscan": 0.7778,
+      "virustotal": 0.3333
+    },
+    "malregistry": {
+      "pyscan": 0.8387,
+      "virustotal": 0.6129
+    }
+  }
+}

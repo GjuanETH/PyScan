@@ -1,0 +1,37 @@
+{
+  "n_samples": 300,
+  "n_malicious": 150,
+  "n_benign": 150,
+  "threat_min": 1,
+  "guarddog_errors": 2,
+  "pyscan": {
+    "recall": 0.88,
+    "precision": 0.9565,
+    "f1": 0.9167,
+    "false_positive_rate": 0.04,
+    "tp": 132,
+    "fp": 6,
+    "tn": 144,
+    "fn": 18
+  },
+  "guarddog": {
+    "recall": 0.8267,
+    "precision": 0.7799,
+    "f1": 0.8026,
+    "false_positive_rate": 0.2365,
+    "tp": 124,
+    "fp": 35,
+    "tn": 113,
+    "fn": 26
+  },
+  "recall_by_source": {
+    "datadog": {
+      "pyscan": 0.8696,
+      "guarddog": 0.8261
+    },
+    "malregistry": {
+      "pyscan": 0.8819,
+      "guarddog": 0.8268
+    }
+  }
+}

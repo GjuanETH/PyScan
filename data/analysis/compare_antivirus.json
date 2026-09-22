@@ -1,0 +1,36 @@
+{
+  "n_samples": 300,
+  "n_malicious": 150,
+  "n_benign": 150,
+  "clamav_errors": 0,
+  "pyscan": {
+    "recall": 0.88,
+    "precision": 0.9565,
+    "f1": 0.9167,
+    "false_positive_rate": 0.04,
+    "tp": 132,
+    "fp": 6,
+    "tn": 144,
+    "fn": 18
+  },
+  "clamav": {
+    "recall": 0.0,
+    "precision": 0.0,
+    "f1": 0.0,
+    "false_positive_rate": 0.0,
+    "tp": 0,
+    "fp": 0,
+    "tn": 150,
+    "fn": 150
+  },
+  "recall_by_source": {
+    "datadog": {
+      "pyscan": 0.8696,
+      "clamav": 0.0
+    },
+    "malregistry": {
+      "pyscan": 0.8819,
+      "clamav": 0.0
+    }
+  }
+}
