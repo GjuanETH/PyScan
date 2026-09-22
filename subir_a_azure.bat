@@ -29,9 +29,14 @@ if not exist ".git" (
     git branch -M main
 )
 
-REM --- 4) Identidad de los commits (se aplica siempre) ---
-git config user.name "Andres Felipe Sanguino Cubillos"
-git config user.email "jdgutierrez017@ucatolica.edu.co"
+REM --- 4) Identidad de los commits: solo si aun no esta configurada ---
+git config user.email >nul 2>&1
+if errorlevel 1 (
+    set /p GITNAME="Tu nombre para los commits: "
+    set /p GITMAIL="Tu correo para los commits: "
+    git config user.name "!GITNAME!"
+    git config user.email "!GITMAIL!"
+)
 
 REM --- 5) Configurar el remoto (solo la primera vez) ---
 git remote get-url origin >nul 2>&1

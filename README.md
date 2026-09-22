@@ -1,5 +1,7 @@
 # pyscan
 
+[![CI](https://github.com/GjuanETH/PyScan/actions/workflows/ci.yml/badge.svg)](https://github.com/GjuanETH/PyScan/actions/workflows/ci.yml)
+
 MVP de **detección de paquetes maliciosos en PyPI** mediante análisis estático y
 aprendizaje automático supervisado. Trabajo de grado — Universidad Católica de
 Colombia, 2026.
@@ -7,22 +9,28 @@ Colombia, 2026.
 Combina tres señales estáticas —**distancia de Levenshtein** sobre el nombre
 (typosquatting), **entropía de Shannon** con ventana deslizante y recorrido de
 **árboles de sintaxis abstracta (AST)**— que alimentan un clasificador
-supervisado (Random Forest / XGBoost). El paquete **nunca se ejecuta**:
+supervisado (Random Forest, seleccionado frente a XGBoost). El paquete **nunca se ejecuta**:
 todo es análisis estático. Arquitectura de monolito modular con patrón
 Pipes and Filters; interfaces con Pydantic; salida JSON/SARIF.
 
 ## Estado
 
-MVP funcionalmente completo. **58 pruebas, cobertura ~91 %.** KPI verificados:
+MVP funcionalmente completo. **66 pruebas, cobertura 91 %.** KPI verificados
+(modelo Random Forest, umbral 0,45; detalle en `data/models/metrics.json`):
 
 | KPI (ISO/IEC 25010:2023) | Meta | Resultado |
 |---|---|---|
-| Recall | ≥ 0,90 | **0,97** |
-| F1-Score | ≥ 0,85 | **0,975** |
-| Falsos positivos | ≤ 10 % | **2,3 %** |
-| Tiempo por paquete | ≤ 120 s | **≈ 1,5 s** |
-| Memoria (RSS) | ≤ 2 GB | **≈ 63 MB** |
+| Recall (hold-out, 866 muestras) | ≥ 0,90 | **0,945** |
+| F1-Score (hold-out) | ≥ 0,85 | **0,933** |
+| Falsos positivos (validación cruzada k=5) | ≤ 10 % | **6,1 %** |
+| Tiempo por paquete (100 paquetes) | ≤ 120 s | **0,91 s media; 25,1 s máx.** |
+| Memoria (RSS del proceso) | ≤ 2 GB | **353 MB** |
 | Cobertura de pruebas | ≥ 80 % | **91 %** |
+
+Frente a GuardDog, sobre las mismas 300 muestras: Recall 0,880 vs 0,827 y
+falsos positivos 4,0 % vs 23,7 %. A prevalencias realistas (1 malicioso por cada
+100), la precisión esperada baja a ~0,13: pyscan sirve para **priorizar** paquetes
+para revisión, no como veredicto definitivo (ver `data/analysis/imbalance.json`).
 
 ## Instalación
 
@@ -105,6 +113,8 @@ python scripts/benchmark_performance.py --packages requests flask numpy rich typ
 | `experiment_ablation.py` | Estudio de ablación / fuga de datos. |
 | `experiment_imbalance.py` | Evaluación a prevalencia realista. |
 | `experiment_compare_guarddog.py` | Comparación empírica con GuardDog. |
+| `experiment_compare_antivirus.py` / `experiment_compare_virustotal.py` | Comparación con ClamAV y VirusTotal. |
+| `fetch_random_pypi.py` | Muestra aleatoria del índice de PyPI (benignos anti-sesgo). |
 | `benchmark_performance.py` | Mide tiempo y memoria por paquete (KPI). |
 
 ## Estructura
@@ -123,10 +133,20 @@ data/              listas de referencia, dataset y modelo (contenido pesado
 ## Seguridad
 
 pyscan realiza únicamente **análisis estático**: descarga y descomprime los
-paquetes (con protección anti Zip-Slip, symlink y zip-bomb) pero **nunca ejecuta
+paquetes (con protección anti Zip-Slip y zip-bomb; los enlaces simbólicos se omiten) pero **nunca ejecuta
 su código**. Aun así, al manejar datasets de malware real, trabájalos en un
 entorno aislado (máquina virtual). Ver `docs/INSTRUCTIVO_DATASETS.md`.
 
+## Desarrollo
+
+```bash
+pip install -e ".[dev,ml]"
+pre-commit install          # isort, black y flake8 en cada commit
+```
+
+El CI de GitHub Actions ejecuta estilo, pruebas y cobertura (mínimo 80 %) en
+Python 3.10–3.12.
+
 ## Licencia
 
-MIT (código abierto).
+MIT — ver `LICENSE`.
