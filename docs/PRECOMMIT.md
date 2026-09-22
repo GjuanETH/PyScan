@@ -76,5 +76,15 @@ pyscan scan -r requirements.txt --sarif pyscan.sarif
 - Paquetes que el clasificador marca como **MALICIOSO**.
 - Nombres **sospechosos por typosquatting** (aunque el paquete no exista aún en
   PyPI), con la sugerencia del paquete legítimo más parecido.
+- Dependencias que **no se pudieron analizar** (sin red, archivo ilegible o sin
+  modelo). Es una política de *fallo seguro*: un paquete sin analizar no se
+  reporta como "sin riesgo". Para permitirlas con un aviso:
+
+```bash
+pyscan precommit --allow-unscanned requirements.txt
+```
+
+Los enlaces simbólicos o duros dentro de un paquete no impiden el análisis: se
+omiten al extraer (no se escriben en disco) y el resto del contenido se analiza.
 
 Todo lo demás pasa sin fricción.

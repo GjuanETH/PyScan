@@ -185,11 +185,39 @@ def test_precommit_blocks_typosquat(monkeypatch, tmp_path):
 
 
 def test_precommit_clean_passes(monkeypatch, tmp_path):
-    """Sin nombres de riesgo (offline), el hook no bloquea el commit."""
+    """Dependencia analizada con veredicto benigno: el hook no bloquea."""
+    from pyscan.models import MLPrediction, Verdict
+    (tmp_path / "mod.py").write_text("def f():\n    return 1\n", encoding="utf-8")
+    monkeypatch.setattr(cli, "fetch", lambda *a, **k: FetchResult(
+        package=Package(name="flask", version="3.0", sha256="abc"),
+        metadata=PackageMetadata(), extracted_path=tmp_path, archive_path=tmp_path))
+    monkeypatch.setattr(cli, "predict",
+                        lambda *a, **k: MLPrediction(score=0.1, verdict=Verdict.BENIGN))
+    req = tmp_path / "requirements.txt"
+    req.write_text("flask\n", encoding="utf-8")
+    res = runner.invoke(app, ["precommit", str(req)])
+    assert res.exit_code == 0
+
+
+def test_precommit_blocks_unscanned(monkeypatch, tmp_path):
+    """Si una dependencia no se pudo analizar, el hook falla en seguro (bloquea)."""
     def boom(*a, **k):
         raise FetchError("offline")
     monkeypatch.setattr(cli, "fetch", boom)
     req = tmp_path / "requirements.txt"
     req.write_text("flask\n", encoding="utf-8")
     res = runner.invoke(app, ["precommit", str(req)])
+    assert res.exit_code == 1
+    assert "NO se pudieron" in res.output
+
+
+def test_precommit_allow_unscanned(monkeypatch, tmp_path):
+    """Con --allow-unscanned, lo no analizado se avisa pero no bloquea."""
+    def boom(*a, **k):
+        raise FetchError("offline")
+    monkeypatch.setattr(cli, "fetch", boom)
+    req = tmp_path / "requirements.txt"
+    req.write_text("flask\n", encoding="utf-8")
+    res = runner.invoke(app, ["precommit", "--allow-unscanned", str(req)])
     assert res.exit_code == 0
+    assert "NO se pudieron" in res.output

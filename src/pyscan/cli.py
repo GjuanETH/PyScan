@@ -217,11 +217,16 @@ def scan(
 def precommit(
     requirements: Optional[List[Path]] = typer.Argument(
         None, help="Archivos requirements.txt a revisar (los pasa pre-commit)."),
+    allow_unscanned: bool = typer.Option(
+        False, "--allow-unscanned",
+        help="No bloquear si alguna dependencia no pudo analizarse "
+             "(sin red, archivo ilegible o sin modelo)."),
 ) -> None:
     """Hook de pre-commit / CI: analiza los requirements y bloquea si hay riesgo.
 
     Sale con código != 0 (bloquea el commit) si algún paquete resulta MALICIOSO
-    o sospechoso por typosquatting; 0 si todo está limpio.
+    o sospechoso por typosquatting, o si alguno no pudo analizarse (política de
+    fallo seguro; se desactiva con --allow-unscanned). Sale con 0 si todo está limpio.
     """
     reqs = [r for r in (requirements or []) if r.exists()]
     names: List[str] = []
@@ -241,10 +246,27 @@ def precommit(
     flagged = [r for r in reports
                if (r.prediction and r.prediction.verdict == Verdict.MALICIOUS)
                or (r.typosquat and r.typosquat.is_typosquat)]
+    flagged_ids = {id(r) for r in flagged}
+    # Sin veredicto del modelo = no analizado (error de descarga/extracción o
+    # sin modelo). No se reporta como "sin riesgo": eso sería fallar en abierto.
+    unscanned = [r for r in reports
+                 if id(r) not in flagged_ids and r.prediction is None]
+    if unscanned:
+        names_txt = ", ".join(r.package.name for r in unscanned)
+        typer.secho(f"\npyscan: {len(unscanned)} dependencia(s) NO se pudieron "
+                    f"analizar: {names_txt}.", fg=typer.colors.YELLOW, bold=True)
     if flagged:
         typer.secho(f"\npyscan bloqueó el commit: {len(flagged)} dependencia(s) "
                     f"en riesgo.", fg=typer.colors.RED, bold=True)
         raise typer.Exit(code=1)
+    if unscanned and not allow_unscanned:
+        typer.secho("pyscan bloqueó el commit: revisa esas dependencias o usa "
+                    "--allow-unscanned para permitirlas.", fg=typer.colors.RED, bold=True)
+        raise typer.Exit(code=1)
+    if unscanned:
+        typer.secho("pyscan: sin riesgo en lo analizado (hay dependencias sin analizar).",
+                    fg=typer.colors.YELLOW)
+        raise typer.Exit(code=0)
     typer.secho("pyscan: dependencias sin riesgo detectado.", fg=typer.colors.GREEN)
     raise typer.Exit(code=0)
 

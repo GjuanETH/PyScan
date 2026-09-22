@@ -38,15 +38,28 @@ def test_safe_extract_blocks_path_traversal_tar(tmp_path: Path):
         safe_extract(archive, tmp_path / "out")
 
 
-def test_safe_extract_blocks_symlink_tar(tmp_path: Path):
+def test_safe_extract_skips_links_tar(tmp_path: Path):
+    """Los enlaces se omiten (no se extraen) y el resto del paquete sí se analiza."""
     archive = tmp_path / "link.tar.gz"
     with tarfile.open(archive, "w:gz") as tar:
-        info = tarfile.TarInfo(name="evil_link")
-        info.type = tarfile.SYMTYPE
-        info.linkname = "/etc/passwd"
-        tar.addfile(info)
-    with pytest.raises(FetchError, match="Enlace no permitido"):
-        safe_extract(archive, tmp_path / "out")
+        code = b"import os\nos.system('x')\n"
+        info = tarfile.TarInfo(name="pkg/mod.py")
+        info.size = len(code)
+        tar.addfile(info, io.BytesIO(code))
+        sym = tarfile.TarInfo(name="pkg/evil_link")
+        sym.type = tarfile.SYMTYPE
+        sym.linkname = "/etc/passwd"
+        tar.addfile(sym)
+        hard = tarfile.TarInfo(name="pkg/hard_link")
+        hard.type = tarfile.LNKTYPE
+        hard.linkname = "pkg/mod.py"
+        tar.addfile(hard)
+    dest = tmp_path / "out"
+    safe_extract(archive, dest)
+    assert (dest / "pkg" / "mod.py").exists()
+    assert not (dest / "pkg" / "evil_link").exists()
+    assert not (dest / "pkg" / "evil_link").is_symlink()
+    assert not (dest / "pkg" / "hard_link").exists()
 
 
 def test_safe_extract_blocks_zip_slip_zip(tmp_path: Path):

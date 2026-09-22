@@ -139,8 +139,11 @@ def _is_within(base: Path, target: Path) -> bool:
 def safe_extract(archive_path: Path, dest_dir: Path) -> Path:
     """Extrae .tar.gz o .whl/.zip con protección contra path traversal.
 
-    Rechaza rutas absolutas, componentes '..', enlaces simbólicos/duros y
-    paquetes que excedan los límites de tamaño/cantidad de archivos.
+    Rechaza rutas absolutas, componentes '..' y paquetes que excedan los
+    límites de tamaño/cantidad de archivos. Los enlaces simbólicos/duros de un
+    tar se omiten (no se extraen) en lugar de abortar: así un enlace no puede
+    escapar del directorio de destino, pero tampoco sirve para que un paquete
+    evite el análisis de todo su contenido.
     """
     dest_dir.mkdir(parents=True, exist_ok=True)
     name = archive_path.name.lower()
@@ -160,13 +163,16 @@ def _safe_extract_tar(archive_path: Path, dest_dir: Path) -> None:
         tar_obj = tarfile.open(archive_path, "r:*")
     except tarfile.TarError as exc:  # archivo corrupto o no es un tar real
         raise FetchError(f"Archivo tar ilegible ({archive_path.name}): {exc}") from exc
+    safe_members: list[tarfile.TarInfo] = []
     with tar_obj as tar:
         for member in tar.getmembers():
             count += 1
             if count > config.MAX_FILE_COUNT:
                 raise FetchError("El paquete excede el número máximo de archivos.")
             if member.issym() or member.islnk():
-                raise FetchError(f"Enlace no permitido en el archivo: {member.name}")
+                # Se omite el enlace (no se extrae). Abortar aquí permitía que un
+                # paquete malicioso evitara el análisis con solo incluir un enlace.
+                continue
             if member.isdev():
                 raise FetchError(f"Archivo de dispositivo no permitido: {member.name}")
             target = dest_dir / member.name
@@ -175,7 +181,8 @@ def _safe_extract_tar(archive_path: Path, dest_dir: Path) -> None:
             total += max(member.size, 0)
             if total > config.MAX_EXTRACT_BYTES:
                 raise FetchError("El paquete excede el tamaño máximo permitido.")
-        tar.extractall(dest_dir)  # noqa: S202 - rutas validadas arriba
+            safe_members.append(member)
+        tar.extractall(dest_dir, members=safe_members)  # noqa: S202 - rutas validadas arriba
 
 
 def _safe_extract_zip(archive_path: Path, dest_dir: Path) -> None:
