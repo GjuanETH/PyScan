@@ -8,8 +8,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from .models import (ASTReport, EntropyReport, FeatureVector, PackageMetadata,
-                     TyposquatReport)
+from .models import ASTReport, EntropyReport, FeatureVector, PackageMetadata, TyposquatReport
 
 
 def build_features(
@@ -21,8 +20,9 @@ def build_features(
     fv = FeatureVector()
 
     if typosquat is not None:
-        fv.name_min_distance = float(typosquat.min_distance
-                                     if typosquat.min_distance is not None else 99)
+        fv.name_min_distance = float(
+            typosquat.min_distance if typosquat.min_distance is not None else 99
+        )
         fv.is_typosquat = 1.0 if typosquat.is_typosquat else 0.0
         fv.has_combo_affix = 1.0 if typosquat.has_combo_affix else 0.0
 

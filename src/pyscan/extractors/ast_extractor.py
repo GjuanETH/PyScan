@@ -18,7 +18,7 @@ from __future__ import annotations
 import ast
 import re
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Optional
 
 from .. import config
 from ..models import ASTReport, Finding
@@ -92,9 +92,14 @@ class _Visitor(ast.NodeVisitor):
             is_bare_builtin = "." not in resolved and resolved in _DANGEROUS_LEAF
             if resolved in _DANGEROUS_DOTTED or is_bare_builtin:
                 self.dangerous.add(resolved)
-                self.findings.append(Finding(kind="dangerous_call", name=resolved,
-                                             file=self.relfile,
-                                             line=getattr(node, "lineno", 0)))
+                self.findings.append(
+                    Finding(
+                        kind="dangerous_call",
+                        name=resolved,
+                        file=self.relfile,
+                        line=getattr(node, "lineno", 0),
+                    )
+                )
         self.generic_visit(node)
 
     def visit_Constant(self, node: ast.Constant) -> None:
@@ -102,13 +107,11 @@ class _Visitor(ast.NodeVisitor):
             line = getattr(node, "lineno", 0)
             for m in _URL_RE.findall(node.value):
                 self.network.add(m)
-                self.findings.append(Finding(kind="network", name=m,
-                                             file=self.relfile, line=line))
+                self.findings.append(Finding(kind="network", name=m, file=self.relfile, line=line))
             for m in _IP_RE.findall(node.value):
                 # Evita falsos positivos triviales como números de versión.
                 self.network.add(m)
-                self.findings.append(Finding(kind="network", name=m,
-                                             file=self.relfile, line=line))
+                self.findings.append(Finding(kind="network", name=m, file=self.relfile, line=line))
         self.generic_visit(node)
 
 
@@ -126,7 +129,9 @@ def _detect_install_hook(tree: ast.AST) -> Optional[int]:
                         return getattr(node, "lineno", 0)
         if isinstance(node, ast.ClassDef):
             for base in node.bases:
-                base_name = base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")
+                base_name = (
+                    base.attr if isinstance(base, ast.Attribute) else getattr(base, "id", "")
+                )
                 if "install" in str(base_name).lower():
                     return getattr(node, "lineno", 0)
     return None
@@ -175,20 +180,20 @@ class ASTExtractor:
                 hook_line = _detect_install_hook(tree)
                 if hook_line is not None:
                     install_hook = True
-                    findings.append(Finding(kind="install_hook", name="setup()",
-                                            file=relfile, line=hook_line))
+                    findings.append(
+                        Finding(kind="install_hook", name="setup()", file=relfile, line=hook_line)
+                    )
 
         return ASTReport(
             dangerous_calls=sorted(dangerous),
             imports=sorted(imports),
             network_literals=sorted(network),
             has_install_hook=install_hook,
-            findings=findings[:200],   # tope defensivo
+            findings=findings[:200],  # tope defensivo
         )
 
 
-def extract_ast_features(root: Path,
-                         extractor: Optional[ASTExtractor] = None) -> ASTReport:
+def extract_ast_features(root: Path, extractor: Optional[ASTExtractor] = None) -> ASTReport:
     """Atajo funcional para usar el extractor sin instanciarlo manualmente."""
     extractor = extractor or ASTExtractor()
     return extractor.extract(root)

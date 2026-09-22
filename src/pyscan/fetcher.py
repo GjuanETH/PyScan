@@ -9,7 +9,6 @@ estático.
 from __future__ import annotations
 
 import hashlib
-import io
 import tarfile
 import zipfile
 from dataclasses import dataclass
@@ -35,15 +34,18 @@ class FetchResult:
 
 
 # --- API de PyPI ----------------------------------------------------------
-def get_pypi_json(name: str, version: Optional[str] = None,
-                  session: Optional[requests.Session] = None) -> dict:
+def get_pypi_json(
+    name: str, version: Optional[str] = None, session: Optional[requests.Session] = None
+) -> dict:
     """Obtiene los metadatos JSON de un paquete desde PyPI."""
-    url = (config.PYPI_JSON_VERSION_URL.format(name=name, version=version)
-           if version else config.PYPI_JSON_URL.format(name=name))
+    url = (
+        config.PYPI_JSON_VERSION_URL.format(name=name, version=version)
+        if version
+        else config.PYPI_JSON_URL.format(name=name)
+    )
     sess = session or requests.Session()
     try:
-        resp = sess.get(url, timeout=config.HTTP_TIMEOUT,
-                        headers={"User-Agent": config.USER_AGENT})
+        resp = sess.get(url, timeout=config.HTTP_TIMEOUT, headers={"User-Agent": config.USER_AGENT})
     except requests.RequestException as exc:  # red caída, timeout, etc.
         raise FetchError(f"No se pudo consultar PyPI para '{name}': {exc}") from exc
     if resp.status_code == 404:
@@ -70,9 +72,11 @@ def parse_metadata(data: dict) -> tuple[Package, PackageMetadata, dict]:
     upload_date = None
     if chosen and chosen.get("upload_time_iso_8601"):
         from datetime import datetime
+
         try:
             upload_date = datetime.fromisoformat(
-                chosen["upload_time_iso_8601"].replace("Z", "+00:00"))
+                chosen["upload_time_iso_8601"].replace("Z", "+00:00")
+            )
         except ValueError:
             upload_date = None
 
@@ -99,16 +103,21 @@ def parse_metadata(data: dict) -> tuple[Package, PackageMetadata, dict]:
 
 
 # --- Descarga -------------------------------------------------------------
-def download_archive(file_url: str, dest_dir: Path,
-                     session: Optional[requests.Session] = None) -> tuple[Path, str]:
+def download_archive(
+    file_url: str, dest_dir: Path, session: Optional[requests.Session] = None
+) -> tuple[Path, str]:
     """Descarga el artefacto y devuelve (ruta, sha256 calculado)."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     filename = file_url.split("/")[-1].split("?")[0] or "package.archive"
     dest = dest_dir / filename
     sess = session or requests.Session()
     try:
-        with sess.get(file_url, timeout=config.HTTP_TIMEOUT, stream=True,
-                      headers={"User-Agent": config.USER_AGENT}) as resp:
+        with sess.get(
+            file_url,
+            timeout=config.HTTP_TIMEOUT,
+            stream=True,
+            headers={"User-Agent": config.USER_AGENT},
+        ) as resp:
             resp.raise_for_status()
             hasher = hashlib.sha256()
             downloaded = 0
@@ -118,7 +127,8 @@ def download_archive(file_url: str, dest_dir: Path,
                     if downloaded > config.MAX_DOWNLOAD_BYTES:
                         raise FetchError(
                             f"El artefacto excede el tamaño máximo de descarga "
-                            f"({config.MAX_DOWNLOAD_BYTES // (1024 * 1024)} MB).")
+                            f"({config.MAX_DOWNLOAD_BYTES // (1024 * 1024)} MB)."
+                        )
                     hasher.update(chunk)
                     fh.write(chunk)
     except requests.RequestException as exc:
@@ -222,14 +232,18 @@ def _safe_extract_zip(archive_path: Path, dest_dir: Path) -> None:
                     if real_total > config.MAX_EXTRACT_BYTES:
                         raise FetchError(
                             "El paquete excede el tamaño máximo permitido "
-                            "(bytes reales descomprimidos).")
+                            "(bytes reales descomprimidos)."
+                        )
                     dst.write(chunk)
 
 
 # --- Orquestación --------------------------------------------------------
-def fetch(name: str, version: Optional[str] = None,
-          workdir: Optional[Path] = None,
-          session: Optional[requests.Session] = None) -> FetchResult:
+def fetch(
+    name: str,
+    version: Optional[str] = None,
+    workdir: Optional[Path] = None,
+    session: Optional[requests.Session] = None,
+) -> FetchResult:
     """Descarga y extrae un paquete de PyPI listo para análisis estático."""
     workdir = workdir or config.CACHE_DIR
     sess = session or requests.Session()
@@ -248,13 +262,15 @@ def fetch(name: str, version: Optional[str] = None,
     expected = file_desc.get("digests", {}).get("sha256")
     if expected and expected != digest:
         raise FetchError(
-            f"sha256 no coincide para '{name}': esperado {expected}, obtenido {digest}.")
+            f"sha256 no coincide para '{name}': esperado {expected}, obtenido {digest}."
+        )
     package.sha256 = digest
 
     extracted = pkg_dir / "extracted"
     safe_extract(archive_path, extracted)
-    return FetchResult(package=package, metadata=metadata,
-                       extracted_path=extracted, archive_path=archive_path)
+    return FetchResult(
+        package=package, metadata=metadata, extracted_path=extracted, archive_path=archive_path
+    )
 
 
 def fetch_from_local(archive_path: Path, dest_dir: Optional[Path] = None) -> Path:

@@ -1,17 +1,20 @@
 """Pruebas del Feature Builder."""
 
 from pyscan.features import build_features
-from pyscan.models import (ASTReport, EntropyReport, PackageMetadata,
-                           TyposquatReport)
+from pyscan.models import ASTReport, EntropyReport, PackageMetadata, TyposquatReport
 
 
 def test_build_features_from_metadata():
-    typo = TyposquatReport(min_distance=1, similar_package="requests",
-                           is_typosquat=True, has_combo_affix=True,
-                           author_present=False, maintainer_count=2)
+    typo = TyposquatReport(
+        min_distance=1,
+        similar_package="requests",
+        is_typosquat=True,
+        has_combo_affix=True,
+        author_present=False,
+        maintainer_count=2,
+    )
     # metadata se conserva por compatibilidad pero ya no aporta características.
-    md = PackageMetadata(releases=["1.0", "1.1"], requires_dist=["x"],
-                         has_long_description=True)
+    md = PackageMetadata(releases=["1.0", "1.1"], requires_dist=["x"], has_long_description=True)
     fv = build_features(typosquat=typo, metadata=md)
     assert fv.name_min_distance == 1.0
     assert fv.is_typosquat == 1.0
@@ -30,8 +33,9 @@ def test_build_features_missing_distance_uses_sentinel():
 def test_build_features_entropy_and_ast():
     fv = build_features(
         entropy=EntropyReport(max=7.9, mean=5.1, suspicious_windows=3),
-        ast=ASTReport(dangerous_calls=["eval", "exec"],
-                      network_literals=["http://x"], has_install_hook=True),
+        ast=ASTReport(
+            dangerous_calls=["eval", "exec"], network_literals=["http://x"], has_install_hook=True
+        ),
     )
     assert fv.entropy_max == 7.9
     assert fv.entropy_suspicious_windows == 3.0

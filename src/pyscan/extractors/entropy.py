@@ -43,7 +43,7 @@ def shannon_entropy(data: bytes) -> float:
 def iter_windows(data: bytes, size: int) -> Iterable[bytes]:
     """Divide los datos en bloques consecutivos (no solapados) de `size` bytes."""
     for i in range(0, len(data), size):
-        block = data[i:i + size]
+        block = data[i : i + size]
         if block:
             yield block
 
@@ -51,9 +51,12 @@ def iter_windows(data: bytes, size: int) -> Iterable[bytes]:
 class EntropyExtractor:
     """Calcula estadísticas de entropía sobre los archivos .py de un paquete."""
 
-    def __init__(self, window: int = config.ENTROPY_WINDOW_BYTES,
-                 suspicious_threshold: float = config.ENTROPY_SUSPICIOUS_THRESHOLD,
-                 patterns: tuple[str, ...] = ("*.py",)):
+    def __init__(
+        self,
+        window: int = config.ENTROPY_WINDOW_BYTES,
+        suspicious_threshold: float = config.ENTROPY_SUSPICIOUS_THRESHOLD,
+        patterns: tuple[str, ...] = ("*.py",),
+    ):
         self.window = window
         self.threshold = suspicious_threshold
         self.patterns = patterns
@@ -97,8 +100,9 @@ class EntropyExtractor:
         )
 
 
-def extract_entropy_features(root: Path,
-                             extractor: Optional[EntropyExtractor] = None) -> EntropyReport:
+def extract_entropy_features(
+    root: Path, extractor: Optional[EntropyExtractor] = None
+) -> EntropyReport:
     """Atajo funcional para usar el extractor sin instanciarlo manualmente."""
     extractor = extractor or EntropyExtractor()
     return extractor.extract(root)

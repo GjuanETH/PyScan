@@ -2,20 +2,28 @@
 
 import json
 
-from pyscan.models import (ASTReport, EntropyReport, MLPrediction, Package,
-                           ScanReport, TyposquatReport, Verdict)
+from pyscan.models import (
+    ASTReport,
+    EntropyReport,
+    MLPrediction,
+    Package,
+    ScanReport,
+    TyposquatReport,
+    Verdict,
+)
 from pyscan.sarif import to_sarif, to_sarif_json
 
 
 def _full_report() -> ScanReport:
     return ScanReport(
         package=Package(name="reqursts", version="1.0"),
-        typosquat=TyposquatReport(min_distance=1, similar_package="requests",
-                                  is_typosquat=True),
+        typosquat=TyposquatReport(min_distance=1, similar_package="requests", is_typosquat=True),
         entropy=EntropyReport(max=7.9, mean=5.0, suspicious_windows=3),
-        ast=ASTReport(dangerous_calls=["exec", "os.system"],
-                      network_literals=["http://evil.example.com"],
-                      has_install_hook=True),
+        ast=ASTReport(
+            dangerous_calls=["exec", "os.system"],
+            network_literals=["http://evil.example.com"],
+            has_install_hook=True,
+        ),
         prediction=MLPrediction(score=0.97, verdict=Verdict.MALICIOUS),
     )
 

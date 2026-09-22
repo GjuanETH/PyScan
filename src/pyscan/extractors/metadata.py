@@ -39,14 +39,55 @@ def _load_reference_names(path: Optional[str] = None) -> tuple[str, ...]:
 
 # Semilla mínima (se reemplaza por la lista completa del Top de PyPI).
 _SEED_PACKAGES: tuple[str, ...] = (
-    "requests", "urllib3", "numpy", "pandas", "setuptools", "boto3", "six",
-    "certifi", "idna", "charset-normalizer", "python-dateutil", "pyyaml",
-    "wheel", "cryptography", "click", "jinja2", "flask", "django", "pillow",
-    "scipy", "scikit-learn", "matplotlib", "pytest", "fastapi", "pydantic",
-    "sqlalchemy", "beautifulsoup4", "lxml", "aiohttp", "tensorflow", "torch",
-    "transformers", "openai", "tqdm", "rich", "typer", "httpx", "websockets",
-    "redis", "celery", "pymongo", "psycopg2", "google-api-python-client",
-    "protobuf", "grpcio", "colorama", "packaging", "attrs", "pyparsing",
+    "requests",
+    "urllib3",
+    "numpy",
+    "pandas",
+    "setuptools",
+    "boto3",
+    "six",
+    "certifi",
+    "idna",
+    "charset-normalizer",
+    "python-dateutil",
+    "pyyaml",
+    "wheel",
+    "cryptography",
+    "click",
+    "jinja2",
+    "flask",
+    "django",
+    "pillow",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "pytest",
+    "fastapi",
+    "pydantic",
+    "sqlalchemy",
+    "beautifulsoup4",
+    "lxml",
+    "aiohttp",
+    "tensorflow",
+    "torch",
+    "transformers",
+    "openai",
+    "tqdm",
+    "rich",
+    "typer",
+    "httpx",
+    "websockets",
+    "redis",
+    "celery",
+    "pymongo",
+    "psycopg2",
+    "google-api-python-client",
+    "protobuf",
+    "grpcio",
+    "colorama",
+    "packaging",
+    "attrs",
+    "pyparsing",
 )
 
 
@@ -64,7 +105,7 @@ def _strip_affix(name: str) -> tuple[str, list[str]]:
                     found.append(affix)
                     changed = True
                 if core.startswith(affix + sep):
-                    core = core[len(affix) + 1:]
+                    core = core[len(affix) + 1 :]
                     found.append(affix)
                     changed = True
     return core, found
@@ -91,11 +132,13 @@ class MetadataExtractor:
     """Extractor de typosquatting y señales de metadatos."""
 
     def __init__(self, reference_names: Optional[Iterable[str]] = None):
-        self.reference = (tuple(n.lower() for n in reference_names)
-                          if reference_names is not None else _load_reference_names())
+        self.reference = (
+            tuple(n.lower() for n in reference_names)
+            if reference_names is not None
+            else _load_reference_names()
+        )
 
-    def extract(self, name: str,
-                metadata: Optional[PackageMetadata] = None) -> TyposquatReport:
+    def extract(self, name: str, metadata: Optional[PackageMetadata] = None) -> TyposquatReport:
         name_l = name.strip().lower()
         core, suffixes = _strip_affix(name_l)
         threshold = config.TYPOSQUAT_DISTANCE_THRESHOLD
@@ -106,8 +149,9 @@ class MetadataExtractor:
             is_typo = False
         else:
             d_full, n_full = _nearest(name_l, self.reference)
-            d_core, n_core = (_nearest(core, self.reference)
-                              if core and core != name_l else (None, None))
+            d_core, n_core = (
+                _nearest(core, self.reference) if core and core != name_l else (None, None)
+            )
 
             # Typosquatting clásico: nombre completo a 1-2 ediciones de un legítimo.
             typo_by_distance = d_full is not None and 0 < d_full <= threshold
@@ -115,10 +159,10 @@ class MetadataExtractor:
             combosquat = bool(suffixes) and d_core is not None and d_core <= threshold
             is_typo = bool(typo_by_distance or combosquat)
 
-            candidates = [(d, n) for d, n in ((d_full, n_full), (d_core, n_core))
-                          if d is not None]
-            min_distance, similar = (min(candidates, key=lambda x: x[0])
-                                     if candidates else (None, None))
+            candidates = [(d, n) for d, n in ((d_full, n_full), (d_core, n_core)) if d is not None]
+            min_distance, similar = (
+                min(candidates, key=lambda x: x[0]) if candidates else (None, None)
+            )
 
         author_present = True
         maintainer_count = 0
@@ -137,9 +181,11 @@ class MetadataExtractor:
         )
 
 
-def extract_metadata_features(name: str,
-                              metadata: Optional[PackageMetadata] = None,
-                              extractor: Optional[MetadataExtractor] = None) -> TyposquatReport:
+def extract_metadata_features(
+    name: str,
+    metadata: Optional[PackageMetadata] = None,
+    extractor: Optional[MetadataExtractor] = None,
+) -> TyposquatReport:
     """Atajo funcional para usar el extractor sin instanciarlo manualmente."""
     extractor = extractor or MetadataExtractor()
     return extractor.extract(name, metadata)

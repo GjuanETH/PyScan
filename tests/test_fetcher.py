@@ -89,6 +89,7 @@ def test_safe_extract_rejects_unknown_format(tmp_path: Path):
 def test_safe_extract_blocks_real_bytes_bomb(tmp_path: Path, monkeypatch):
     """El límite debe aplicarse sobre los bytes reales descomprimidos."""
     import pyscan.config as config
+
     archive = tmp_path / "bomb.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as zf:
         zf.writestr("big.bin", b"\x00" * 100_000)  # 100 KB reales
@@ -116,14 +117,20 @@ def test_download_size_cap(tmp_path: Path, monkeypatch):
 
     class FakeResponse:
         def raise_for_status(self): ...
+
         def iter_content(self, chunk_size):
             for _ in range(10):
                 yield b"x" * 500  # 5 KB en total
-        def __enter__(self): return self
-        def __exit__(self, *a): return False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
 
     class FakeSession:
-        def get(self, *a, **kw): return FakeResponse()
+        def get(self, *a, **kw):
+            return FakeResponse()
 
     with pytest.raises(FetchError, match="descarga"):
         download_archive("https://x/pkg.tar.gz", tmp_path, session=FakeSession())
@@ -133,15 +140,27 @@ def test_download_size_cap(tmp_path: Path, monkeypatch):
 def test_parse_metadata_selects_sdist():
     data = {
         "info": {
-            "name": "demo", "version": "1.2.3", "author": "Jane",
-            "summary": "A demo", "author_email": "jane@example.com",
-            "description": "long text", "requires_dist": ["requests>=2"],
+            "name": "demo",
+            "version": "1.2.3",
+            "author": "Jane",
+            "summary": "A demo",
+            "author_email": "jane@example.com",
+            "description": "long text",
+            "requires_dist": ["requests>=2"],
             "project_urls": {"Home": "https://example.com"},
         },
         "urls": [
-            {"packagetype": "bdist_wheel", "url": "https://x/demo.whl", "digests": {"sha256": "aaa"}},
-            {"packagetype": "sdist", "url": "https://x/demo.tar.gz",
-             "digests": {"sha256": "bbb"}, "upload_time_iso_8601": "2024-01-01T00:00:00Z"},
+            {
+                "packagetype": "bdist_wheel",
+                "url": "https://x/demo.whl",
+                "digests": {"sha256": "aaa"},
+            },
+            {
+                "packagetype": "sdist",
+                "url": "https://x/demo.tar.gz",
+                "digests": {"sha256": "bbb"},
+                "upload_time_iso_8601": "2024-01-01T00:00:00Z",
+            },
         ],
         "releases": {"1.2.3": [], "1.2.2": []},
     }

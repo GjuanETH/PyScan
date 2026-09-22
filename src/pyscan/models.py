@@ -57,10 +57,10 @@ class EntropyReport(BaseModel):
 class Finding(BaseModel):
     """Hallazgo localizado: qué se detectó y dónde (archivo y línea)."""
 
-    kind: str            # dangerous_call | network | install_hook
-    name: str            # p. ej. 'os.system', 'http://x', 'setup()'
-    file: str            # ruta relativa dentro del paquete
-    line: int = 0        # número de línea (0 si no aplica)
+    kind: str  # dangerous_call | network | install_hook
+    name: str  # p. ej. 'os.system', 'http://x', 'setup()'
+    file: str  # ruta relativa dentro del paquete
+    line: int = 0  # número de línea (0 si no aplica)
 
 
 class ASTReport(BaseModel):

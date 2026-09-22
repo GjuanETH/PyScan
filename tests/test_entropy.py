@@ -3,8 +3,7 @@
 import os
 from pathlib import Path
 
-from pyscan.extractors.entropy import (EntropyExtractor, iter_windows,
-                                       shannon_entropy)
+from pyscan.extractors.entropy import EntropyExtractor, iter_windows, shannon_entropy
 
 
 def test_entropy_uniform_is_zero():

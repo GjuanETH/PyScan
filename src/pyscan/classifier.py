@@ -32,13 +32,14 @@ def load_bundle(path: Optional[Path] = None) -> dict:
     model_path = Path(path) if path else config.MODEL_FILE
     if not model_path.exists():
         raise ModelNotAvailable(
-            f"No hay modelo entrenado en {model_path}. "
-            "Ejecuta: python scripts/train_model.py")
+            f"No hay modelo entrenado en {model_path}. " "Ejecuta: python scripts/train_model.py"
+        )
     try:
         import joblib
     except ImportError as exc:  # pragma: no cover
         raise ModelNotAvailable(
-            "Dependencias ML no instaladas. Ejecuta: pip install -e '.[ml]'") from exc
+            "Dependencias ML no instaladas. Ejecuta: pip install -e '.[ml]'"
+        ) from exc
     bundle = joblib.load(model_path)
     if not isinstance(bundle, dict) or "model" not in bundle:
         raise ModelNotAvailable(f"Formato de modelo no reconocido en {model_path}.")
@@ -54,9 +55,9 @@ def _positive_index(model) -> int:
     return len(classes) - 1
 
 
-def predict(fv: FeatureVector,
-            bundle: Optional[dict] = None,
-            model_path: Optional[Path] = None) -> MLPrediction:
+def predict(
+    fv: FeatureVector, bundle: Optional[dict] = None, model_path: Optional[Path] = None
+) -> MLPrediction:
     """Clasifica un FeatureVector y devuelve score, veredicto e importancias."""
     bundle = bundle if bundle is not None else load_bundle(model_path)
     model = bundle["model"]
@@ -75,8 +76,6 @@ def predict(fv: FeatureVector,
 
     importance: dict[str, float] = {}
     if hasattr(model, "feature_importances_"):
-        importance = {n: round(float(v), 4)
-                      for n, v in zip(names, model.feature_importances_)}
+        importance = {n: round(float(v), 4) for n, v in zip(names, model.feature_importances_)}
 
-    return MLPrediction(score=round(score, 4), verdict=verdict,
-                        feature_importance=importance)
+    return MLPrediction(score=round(score, 4), verdict=verdict, feature_importance=importance)
