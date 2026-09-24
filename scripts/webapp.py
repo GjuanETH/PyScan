@@ -361,7 +361,7 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
        <div class="sub">Frecuencia de cada técnica maliciosa hallada en las muestras del dataset (análisis estático). Pasa el mouse sobre cada barra para ver qué significa.</div>
        <canvas id="chVec" height="220"></canvas></div>
      <div class="panel"><h3>Composición del dataset</h3>
-       <div class="sub">Paquetes usados para entrenar y validar el modelo. Pasa el mouse sobre cada mitad para ver su origen.</div>
+       <div class="sub" id="dataSub">Manifiesto del dataset. Pasa el mouse sobre cada mitad para ver su origen.</div>
        <canvas id="chData" height="220"></canvas></div>
    </div>
    <div class="cards" style="margin-top:18px">
@@ -568,14 +568,17 @@ async function loadGeneral(){
       .map(([kk,v])=>({label:v.label,pct:v.percentage,desc:VEC[kk]||''}))
       .sort((a,b)=>b.pct-a.pct);
     new Chart(document.getElementById('chVec'),{type:'bar',
-      data:{labels:arr.map(x=>x.label),datasets:[{label:'% de paquetes',data:arr.map(x=>x.pct),backgroundColor:'#1F3864'}]},
+      data:{labels:arr.map(x=>wrap(x.label,24)),datasets:[{label:'% de paquetes',data:arr.map(x=>x.pct),backgroundColor:'#1F3864'}]},
       options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{
         label:c=>NF(c.parsed.x,1)+' % de las muestras maliciosas',
         afterLabel:c=>arr[c.dataIndex].desc?wrap(arr[c.dataIndex].desc):[]}}},
         scales:{x:{beginAtZero:true,ticks:{callback:v=>v+' %'}}}}});
   }
   // Dataset
-  if(d.dataset){new Chart(document.getElementById('chData'),{type:'doughnut',
+  if(d.dataset){const man=d.dataset.malicious+d.dataset.benign;
+    document.getElementById('dataSub').textContent='Manifiesto del dataset ('+NF(man,0)+' muestras). '+
+      (used?('Se usaron '+NF(used,0)+'; las '+NF(man-used,0)+' restantes se descartaron en la extracción. '):'')+
+      'Pasa el mouse sobre cada mitad para ver su origen.';new Chart(document.getElementById('chData'),{type:'doughnut',
     data:{labels:['Maliciosas ('+NF(d.dataset.malicious,0)+')','Benignas ('+NF(d.dataset.benign,0)+')'],datasets:[{data:[d.dataset.malicious,d.dataset.benign],backgroundColor:['#c0392b','#1e8449']}]},
     options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
       label:c=>' '+c.label.split(' (')[0]+': '+NF(c.parsed,0)+' paquetes del manifiesto',
