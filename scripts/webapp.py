@@ -18,7 +18,9 @@ Ejecutar:
 from __future__ import annotations
 
 import csv
+import functools
 import json
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -35,6 +37,25 @@ from pyscan.cli import _scan_pypi, _scan_local, _parse_requirements  # noqa: E40
 from pyscan.models import Verdict, ScanReport  # noqa: E402
 
 app = Flask(__name__)
+
+# Literales tipo "0.3.30.0": son números de versión que el extractor AST toma por
+# direcciones IPv4 (0.x.x.x no es una IP enrutable). Solo se ocultan en pantalla;
+# la característica del modelo no cambia (el modelo se entrenó con ella tal cual).
+_VERSION_LIKE = re.compile(r"^0\.\d{1,3}\.\d{1,3}\.\d{1,3}$")
+
+
+def _is_version_like(lit: str) -> bool:
+    return lit != "0.0.0.0" and bool(_VERSION_LIKE.match(lit))
+
+
+@functools.lru_cache(maxsize=1)
+def _threshold():
+    """Umbral de decisión del modelo entrenado (None si no hay modelo)."""
+    try:
+        from pyscan.classifier import load_bundle
+        return float(load_bundle().get("threshold", config.ML_DEFAULT_THRESHOLD))
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _report_dict(report: ScanReport, note) -> dict:
@@ -55,7 +76,9 @@ def _report_dict(report: ScanReport, note) -> dict:
            "entropy_max": None, "entropy_suspicious_windows": 0, "locations": []}
     if report.ast:
         det["dangerous_calls"] = _uniq(report.ast.dangerous_calls, 30)
-        det["network_literals"] = _uniq(report.ast.network_literals, 30)
+        lits = list(dict.fromkeys(report.ast.network_literals))
+        det["network_literals"] = [x for x in lits if not _is_version_like(x)][:30]
+        det["version_like_omitted"] = sum(1 for x in lits if _is_version_like(x))
         det["imports"] = _uniq(report.ast.imports, 40)
         det["install_hook"] = bool(report.ast.has_install_hook)
         det["locations"] = [{"kind": f.kind, "name": f.name, "file": f.file,
@@ -70,12 +93,17 @@ def _report_dict(report: ScanReport, note) -> dict:
     r["detail"] = det
 
     if report.errors:
-        if report.typosquat and report.typosquat.is_typosquat:
-            r["verdict"] = "sospechoso"
-            r["reasons"].append(
-                f"nombre similar a '{report.typosquat.similar_package}' "
-                f"(posible typosquatting)")
-            r["reasons"].append("paquete no disponible en PyPI")
+        missing = any("no existe en PyPI" in e for e in report.errors)
+        if missing:
+            # No se puede instalar hoy: no es una amenaza activa sino un nombre
+            # mal escrito (aunque un atacante podría registrarlo después).
+            r["verdict"] = "no existe"
+            if report.typosquat and report.typosquat.is_typosquat:
+                r["reasons"].append(
+                    f"no existe en PyPI; se parece a '{report.typosquat.similar_package}' "
+                    f"(posible error de tipeo)")
+            else:
+                r["reasons"].append("no existe en PyPI (revisa el nombre)")
             return r
         r["verdict"] = "error"; r["error"] = report.errors[0]; return r
     if report.prediction:
@@ -84,18 +112,25 @@ def _report_dict(report: ScanReport, note) -> dict:
         r["score"] = round(report.prediction.score, 3)
     if report.typosquat and report.typosquat.is_typosquat:
         r["reasons"].append(f"typosquat de '{report.typosquat.similar_package}'")
+    signals = []
     if det["install_hook"]:
-        r["reasons"].append("hook de instalación (ejecuta código al instalar)")
+        signals.append("hook de instalación (ejecuta código al instalar)")
     if det["dangerous_calls"]:
         shown = ", ".join(det["dangerous_calls"][:3])
         extra = f" +{len(det['dangerous_calls']) - 3}" if len(det["dangerous_calls"]) > 3 else ""
-        r["reasons"].append(f"llamadas peligrosas: {shown}{extra}")
+        signals.append(f"llamadas sensibles: {shown}{extra}")
     if det["network_literals"]:
         shown = ", ".join(det["network_literals"][:2])
         extra = f" +{len(det['network_literals']) - 2}" if len(det["network_literals"]) > 2 else ""
-        r["reasons"].append(f"conexiones/URLs: {shown}{extra}")
+        signals.append(f"conexiones/URLs: {shown}{extra}")
     if det["entropy_suspicious_windows"]:
-        r["reasons"].append(f"{det['entropy_suspicious_windows']} ventanas de entropía alta")
+        signals.append(f"{det['entropy_suspicious_windows']} ventanas de entropía alta")
+    if r["verdict"] == "benigno" and signals:
+        # En una librería legítima estas señales son habituales; se muestran
+        # como observación, no como motivo del veredicto.
+        r["reasons"].append("observado, no concluyente: " + "; ".join(signals))
+    else:
+        r["reasons"].extend(signals)
     return r
 
 
@@ -155,7 +190,8 @@ def api_update():
 
 @app.get("/api/status")
 def api_status():
-    return jsonify({"version": __version__, "model": config.MODEL_FILE.exists()})
+    return jsonify({"version": __version__, "model": config.MODEL_FILE.exists(),
+                    "threshold": _threshold()})
 
 
 @app.get("/api/metrics")
@@ -189,7 +225,7 @@ def api_metrics():
     return jsonify({"metrics": metrics, "vectors": vectors,
                     "benchmark": benchmark, "dataset": comp,
                     "guarddog": guarddog, "antivirus": antivirus,
-                    "virustotal": virustotal,
+                    "virustotal": virustotal, "threshold": _threshold(),
                     "has_model": config.MODEL_FILE.exists()})
 
 
@@ -232,6 +268,8 @@ td{padding:10px 12px;border-top:1px solid #eef1f7;font-size:14px;vertical-align:
 .non{background:#eef1f7;color:#5b6472;}
 .err{background:#fff3e0;color:#b9770e;}
 .sus{background:#fdecd7;color:#b9600e;}
+.nex{background:#e8eaf6;color:#3f4a8a;}
+.ev .muted{color:#6a7180;font-size:12.5px;}
 .spin{display:none;margin-top:14px;color:var(--navy);font-weight:600;}
 .note{background:var(--card);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:8px;}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin:8px 0 24px;}
@@ -300,7 +338,7 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
    <div class="kpis" id="aKpis"></div>
    <div class="cards">
      <div class="panel"><h3>Veredictos de tus escaneos</h3>
-       <div class="sub">Cómo se repartió lo que analizaste (benigno / sospechoso / malicioso).</div>
+       <div class="sub">Cómo se repartió lo que analizaste (benigno / malicioso / no existe en PyPI).</div>
        <canvas id="chVerdict" height="220"></canvas></div>
      <div class="panel"><h3>Señales más frecuentes en lo analizado</h3>
        <div class="sub">Cuántos de tus paquetes activaron cada señal, y de qué paquetes vienen.</div>
@@ -334,16 +372,27 @@ footer{max-width:1020px;margin:20px auto;padding:0 20px;color:#8a90a0;font-size:
        <div class="sub">Qué señales pesan más en la decisión del modelo. Pasa el mouse sobre cada barra para ver qué mide.</div>
        <canvas id="chImp" height="240"></canvas></div>
    </div>
-   <div class="panel" style="margin-top:18px"><h3>pyscan frente a otras herramientas</h3>
-     <div class="sub">Efectividad comparada con GuardDog (reglas), ClamAV (un antivirus) y VirusTotal (60+ motores) sobre el mismo conjunto. Pasa el mouse sobre cada barra.</div>
+   <div class="panel" style="margin-top:18px"><h3>pyscan frente a GuardDog y ClamAV</h3>
+     <div class="sub" id="cmpSub1">Mismo subconjunto del hold-out para las tres herramientas. En Falsos positivos, más bajo es mejor.</div>
      <canvas id="chCmp" height="150"></canvas>
      <div class="sub" id="cmpNote" style="display:none;margin-top:10px"></div></div>
+   <div class="panel" style="margin-top:18px"><h3>pyscan frente a VirusTotal</h3>
+     <div class="sub" id="cmpSub2">Subconjunto más pequeño por el límite de consultas de la API gratuita de VirusTotal; no es comparable directamente con el gráfico anterior.</div>
+     <canvas id="chCmpVT" height="150"></canvas></div>
    <div class="note" id="dashNote" style="display:none;margin-top:16px"></div>
  </section>
 </main>
 <footer>pyscan — Universidad Católica de Colombia. Ejecución local (127.0.0.1).</footer>
 <script>
-let sess={analizados:0,benignos:0,sospechosos:0,maliciosos:0,errores:0};
+let sess={analizados:0,benignos:0,sospechosos:0,maliciosos:0,noexiste:0,errores:0};
+let TH=null;
+function NF(x,d){return Number(x).toLocaleString('es-CO',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function PCT(x,d){return NF(x*100,d==null?1:d)+' %';}
+function SC(v){return v!=null?NF(v,3):'—';}
+fetch('/api/status').then(r=>r.json()).then(d=>{TH=d.threshold;}).catch(()=>{});
+const valueLabels={id:'vl',afterDatasetsDraw(ch){const c=ch.ctx;c.save();c.font='11px Segoe UI, Arial';c.fillStyle='#33415c';c.textAlign='center';
+  ch.data.datasets.forEach((ds,i)=>{const m=ch.getDatasetMeta(i);if(m.hidden)return;
+    m.data.forEach((b,j)=>{const v=ds.data[j];if(v==null)return;c.fillText(NF(v,2),b.x,b.y-4);});});c.restore();}};
 let history=[];
 let dashLoaded=false, charts={};
 const VIEWS=['scan','analysis','general'];
@@ -355,10 +404,11 @@ function show(v){
   if(v==='general'){ loadGeneral(); }
   if(v==='analysis'){ renderAnalysis(); }
 }
-function tally(rs){const t=new Date().toLocaleTimeString();
+function tally(rs){const t=new Date().toLocaleTimeString('es-CO');
   for(const r of rs){sess.analizados++;
     if(r.verdict==='MALICIOSO')sess.maliciosos++;else if(r.verdict==='benigno')sess.benignos++;
-    else if(r.verdict==='sospechoso')sess.sospechosos++;else if(r.verdict==='error')sess.errores++;
+    else if(r.verdict==='sospechoso')sess.sospechosos++;else if(r.verdict==='no existe')sess.noexiste++;
+    else if(r.verdict==='error')sess.errores++;
     history.push(Object.assign({time:t},r));}
   if(document.getElementById('view-analysis').style.display!=='none')renderAnalysis();}
 async function scan(){
@@ -392,21 +442,23 @@ const FEAT={
  entropy_max:{l:'Entropía máxima',d:'Máxima aleatoriedad del contenido; alta sugiere ofuscación o datos empaquetados.'},
  entropy_mean:{l:'Entropía media',d:'Aleatoriedad promedio del contenido del paquete.'},
  entropy_suspicious_windows:{l:'Ventanas de alta entropía',d:'Nº de bloques con entropía sospechosa (posible código ofuscado).'},
- ast_dangerous_calls:{l:'Llamadas peligrosas',d:'Nº de os.system/eval/exec/subprocess hallados en el código.'},
+ ast_dangerous_calls:{l:'Llamadas sensibles',d:'Nº de os.system/eval/exec/subprocess hallados en el código.'},
  ast_network_literals:{l:'Literales de red',d:'Nº de URLs/IPs/sockets en el código (posible exfiltración).'},
  ast_has_install_hook:{l:'Hook de instalación',d:'1 si ejecuta código al instalarse (setup.py).'}};
 function fActive(k,v){
-  if(k==='name_min_distance')return v<=2;
+  if(k==='name_min_distance')return v>=1&&v<=2;  // 0 = es el propio paquete legítimo
   if(k==='entropy_max')return v>=4.5;
   if(k==='entropy_mean')return v>=4.0;
   return v>=1;}
-function badge(v){const m={'MALICIOSO':'mal','benigno':'ben','sospechoso':'sus','sin modelo':'non','error':'err'};
+function badge(v){const m={'MALICIOSO':'mal','benigno':'ben','sospechoso':'sus','no existe':'nex','sin modelo':'non','error':'err'};
   return '<span class="badge '+(m[v]||'non')+'">'+v+'</span>';}
 function esc(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
 function chips(arr,cls){return arr.map(x=>'<span class="chip '+(cls||'')+'">'+esc(x)+'</span>').join(' ');}
 function whyText(r){
-  if(r.verdict==='MALICIOSO')return 'El modelo lo clasificó <b>MALICIOSO</b> (score '+r.score+'). Encontró la combinación de señales típica del malware:';
-  if(r.verdict==='benigno')return 'El modelo lo clasificó <b>benigno</b> (score '+r.score+'). No presenta la combinación de señales del malware: sin typosquatting ni hook de instalación; las llamadas o conexiones que tenga son las normales de una librería legítima.';
+  const th=TH!=null?' (umbral '+NF(TH,2)+')':'';
+  if(r.verdict==='MALICIOSO')return 'El modelo lo clasificó <b>MALICIOSO</b>: score '+SC(r.score)+th+'. Encontró la combinación de señales típica del malware:';
+  if(r.verdict==='benigno')return 'El modelo lo clasificó <b>benigno</b>: score '+SC(r.score)+th+'. No presenta la combinación de señales del malware. Las llamadas o conexiones listadas abajo son habituales en librerías legítimas y, por sí solas, no indican malware.';
+  if(r.verdict==='no existe')return '<b>Este nombre no existe en PyPI</b>, así que hoy no se puede instalar y no es una amenaza activa. Si se parece a un paquete conocido, probablemente es un error de tipeo; ojo: un atacante podría registrar ese nombre más adelante.';
   if(r.verdict==='sospechoso')return 'Marcado <b>sospechoso</b> por el nombre, antes incluso de analizar el código:';
   return 'Se muestran las señales encontradas (sin modelo entrenado no hay veredicto):';
 }
@@ -421,9 +473,11 @@ function detailRows(r){
     (det.typosquat_distance!=null?' (distancia '+det.typosquat_distance+')':''));
   if(det.install_hook)ev.push('<b>Hook de instalación:</b> ejecuta código al instalar (setup.py)');
   if(det.dangerous_calls&&det.dangerous_calls.length)
-    ev.push('<b>Llamadas peligrosas ('+det.dangerous_calls.length+'):</b><br>'+chips(det.dangerous_calls,'bad'));
+    ev.push('<b>Llamadas sensibles ('+det.dangerous_calls.length+'):</b><br>'+chips(det.dangerous_calls,r.verdict==='benigno'?'':'bad'));
   if(det.network_literals&&det.network_literals.length)
-    ev.push('<b>Conexiones / URLs ('+det.network_literals.length+'):</b><br>'+chips(det.network_literals,'bad'));
+    ev.push('<b>Conexiones / URLs ('+det.network_literals.length+'):</b><br>'+chips(det.network_literals,r.verdict==='benigno'?'':'bad'));
+  if(det.version_like_omitted)
+    ev.push('<span class="muted">Se omitieron '+det.version_like_omitted+' literal(es) tipo «0.x.x.x» que son números de versión, no direcciones IP (limitación conocida del extractor).</span>');
   if(det.entropy_suspicious_windows)
     ev.push('<b>Entropía alta:</b> '+det.entropy_suspicious_windows+' ventana(s) sospechosa(s) (máx '+det.entropy_max+') → posible ofuscación');
   if(det.locations&&det.locations.length)
@@ -434,7 +488,7 @@ function detailRows(r){
   if(ev.length)h+='<ul class="ev"><li>'+ev.join('</li><li>')+'</li></ul>';
   else if(r.verdict==='benigno')h+='<div class="sub">No se hallaron señales de riesgo relevantes en el código.</div>';
   // Tabla de las 9 características del modelo
-  if(f){
+  if(f&&r.verdict!=='no existe'){
     h+='<div class="sub" style="margin-top:10px"><b>Las 9 características que ve el modelo</b> (⚑ = activa):</div>';
     h+='<table class="feat"><tr><th>Señal</th><th>Valor</th><th>Qué significa</th></tr>';
     for(const k in FEAT){const v=f[k],a=fActive(k,v);
@@ -448,11 +502,11 @@ function render(d){
   document.getElementById('summary').innerHTML='Analizados: '+d.total+' · '+
     '<span style="color:'+(mal?'#c0392b':'#1e8449')+'">'+d.maliciosos+' maliciosos</span>'+
     '<div class="sub" style="margin-top:4px">Haz clic en una fila para ver, desmenuzado, por qué el modelo decidió eso.</div>';
-  let h='<table><tr><th>Paquete</th><th>Veredicto</th><th>Score</th><th>Motivos / señales</th></tr>';
+  let h='<table><tr><th>Paquete</th><th>Veredicto</th><th>Score'+(TH!=null?' <span style="font-weight:400">(umbral '+NF(TH,2)+')</span>':'')+'</th><th>Motivos / señales</th></tr>';
   d.results.forEach((r,i)=>{const can=!!(r.features||r.detail);
     h+='<tr class="row'+(can?' clk':'')+'"'+(can?' onclick="tgl('+i+')"':'')+'>'+
       '<td>'+(can?'<span class="caret" id="cr'+i+'">▸</span> ':'')+'<b>'+esc(r.package)+'</b> '+esc(r.version||'')+'</td>'+
-      '<td>'+badge(r.verdict)+'</td><td>'+(r.score!=null?r.score:'—')+'</td>'+
+      '<td>'+badge(r.verdict)+'</td><td>'+SC(r.score)+'</td>'+
       '<td>'+(r.error?('<i>'+esc(r.error)+'</i>'):(r.reasons.map(esc).join('; ')||'—'))+'</td></tr>';
     if(can)h+='<tr class="det" id="det'+i+'" style="display:none"><td colspan="4">'+detailRows(r)+'</td></tr>';});
   h+='</table>'; document.getElementById('out').innerHTML=h;
@@ -488,18 +542,23 @@ async function loadGeneral(){
   const r=await fetch('/api/metrics'); const d=await r.json();
   const m=d.metrics, sel=m?m.selected_model:null, cv=(m&&sel)?m.cv_results[sel]:null, ho=m?m.holdout:null;
   let k='';
-  if(ho){k+=kpi((ho.recall*100).toFixed(1)+'%','Recall (hold-out)',
-      'De cada 100 paquetes maliciosos reales, el modelo detecta ~'+(ho.recall*100).toFixed(0)+'. Medido sobre el 20% de datos que el modelo nunca vio al entrenar (hold-out). Es la métrica clave: mide cuánto malware NO se escapa.');
-         k+=kpi(ho.f1.toFixed(3),'F1-Score (hold-out)',
-      'Equilibrio entre detectar malware (recall) y no dar falsas alarmas (precisión). Es su media armónica: cerca de 1 es mejor. Resume la calidad global en un solo número.');}
-  if(cv){k+=kpi((cv.false_positive_rate*100).toFixed(1)+'%','Falsos positivos',
-      'De cada 100 paquetes benignos, ~'+(cv.false_positive_rate*100).toFixed(1)+' se marcan por error como maliciosos (falsas alarmas). Medido en validación cruzada de 5 particiones. Conviene que sea bajo.');
-         k+=kpi(cv.pr_auc.toFixed(3),'PR-AUC',
-      'Área bajo la curva Precisión-Recall. Mide qué tan bien separa malicioso de benigno cuando las clases están desbalanceadas; 1.0 es perfecto. Más informativa que la exactitud simple.');}
-  if(d.benchmark&&d.benchmark.tiempo_seg){k+=kpi(d.benchmark.tiempo_seg.max+' s','Tiempo máx./paquete',
-      'Tiempo máximo en analizar un paquete completo: descarga desde PyPI + análisis estático (nombre, entropía, AST) + veredicto del modelo. Medido con benchmark_performance.py.');}
-  if(d.dataset){k+=kpi((d.dataset.malicious+d.dataset.benign).toLocaleString(),'Muestras del dataset',
-      'Total de paquetes para entrenar y validar: '+d.dataset.malicious.toLocaleString()+' maliciosos (repositorios DataDog y PyPI Malregistry) y '+d.dataset.benign.toLocaleString()+' benignos (Top de PyPI).');}
+  if(ho){k+=kpi(PCT(ho.recall),'Recall (hold-out)',
+      'De cada 100 paquetes maliciosos reales, el modelo detecta ~'+NF(ho.recall*100,0)+'. Medido sobre los '+NF(ho.n_samples||0,0).replace(/^0$/,'')+' paquetes que el modelo nunca vio al entrenar (hold-out). Es la métrica clave: mide cuánto malware NO se escapa.');
+         k+=kpi(NF(ho.f1,3),'F1-Score (hold-out)',
+      'Equilibrio entre detectar malware (recall) y no dar falsas alarmas (precisión); cerca de 1 es mejor. Medido en el hold-out.');}
+  if(cv){k+=kpi(PCT(cv.false_positive_rate),'Falsos positivos (val. cruzada)',
+      'De cada 100 paquetes benignos, ~'+NF(cv.false_positive_rate*100,1)+' se marcan por error como maliciosos. Medido en validación cruzada estratificada de 5 particiones.');
+         k+=kpi(NF(cv.pr_auc,3),'PR-AUC (val. cruzada)',
+      'Área bajo la curva Precisión-Recall; mide qué tan bien separa malicioso de benigno con clases desbalanceadas (1 es perfecto). Medido en validación cruzada.');}
+  const ts=d.benchmark&&d.benchmark.tiempo_seg;
+  if(ts&&ts.media!=null){k+=kpi(NF(ts.media,2)+' s','Tiempo medio por paquete',
+      'Descarga desde PyPI + análisis estático + veredicto del modelo. Mediana '+NF(ts.mediana,2)+' s, p95 '+NF(ts.p95,2)+' s, máximo '+NF(ts.max,2)+' s (paquetes muy grandes). Medido con benchmark_performance.py.');}
+  const used=(m&&ho&&m.n_samples&&ho.n_samples)?m.n_samples+ho.n_samples:null;
+  if(used){const man=d.dataset?(d.dataset.malicious+d.dataset.benign):null;
+    k+=kpi(NF(used,0),'Muestras usadas',
+      'Entrenamiento: '+NF(m.n_samples,0)+' ('+NF(m.n_malicious,0)+' maliciosos y '+NF(m.n_benign,0)+' benignos). Evaluación final (hold-out): '+NF(ho.n_samples,0)+'.'+
+      (man?' El manifiesto tiene '+NF(man,0)+' muestras; '+NF(man-used,0)+' se descartaron en la extracción (archivos ilegibles o sin código analizable).':''));}
+  else if(d.dataset){k+=kpi(NF(d.dataset.malicious+d.dataset.benign,0),'Muestras del manifiesto','Total de paquetes del manifiesto del dataset.');}
   document.getElementById('kpis').innerHTML=k||'<div class="kpi"><div class="v">—</div><div class="l">Entrena el modelo para ver métricas</div></div>';
   if(!m){document.getElementById('dashNote').style.display='block';
     document.getElementById('dashNote').textContent='No se encontró data/models/metrics.json. Entrena el modelo (train_model.py) para poblar el panel.';}
@@ -510,19 +569,19 @@ async function loadGeneral(){
       .sort((a,b)=>b.pct-a.pct);
     new Chart(document.getElementById('chVec'),{type:'bar',
       data:{labels:arr.map(x=>x.label),datasets:[{label:'% de paquetes',data:arr.map(x=>x.pct),backgroundColor:'#1F3864'}]},
-      options:{plugins:{legend:{display:false},tooltip:{callbacks:{
-        label:c=>c.parsed.y+'% de las muestras',
+      options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{
+        label:c=>NF(c.parsed.x,1)+' % de las muestras maliciosas',
         afterLabel:c=>arr[c.dataIndex].desc?wrap(arr[c.dataIndex].desc):[]}}},
-        scales:{y:{beginAtZero:true,ticks:{callback:v=>v+'%'}}}}});
+        scales:{x:{beginAtZero:true,ticks:{callback:v=>v+' %'}}}}});
   }
   // Dataset
   if(d.dataset){new Chart(document.getElementById('chData'),{type:'doughnut',
-    data:{labels:['Maliciosas','Benignas'],datasets:[{data:[d.dataset.malicious,d.dataset.benign],backgroundColor:['#c0392b','#1e8449']}]},
+    data:{labels:['Maliciosas ('+NF(d.dataset.malicious,0)+')','Benignas ('+NF(d.dataset.benign,0)+')'],datasets:[{data:[d.dataset.malicious,d.dataset.benign],backgroundColor:['#c0392b','#1e8449']}]},
     options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
-      label:c=>' '+c.label+': '+c.parsed.toLocaleString()+' paquetes',
+      label:c=>' '+c.label.split(' (')[0]+': '+NF(c.parsed,0)+' paquetes del manifiesto',
       afterLabel:c=>wrap(c.dataIndex===0
         ?'Muestras reales de malware de los repositorios DataDog y PyPI Malregistry.'
-        :'Paquetes legítimos: los más descargados del Top de PyPI.')}}}}});}
+        :'Paquetes legítimos del Top de PyPI y de una muestra aleatoria del índice.')}}}}});}
   // Matriz de confusión
   if(cv&&cv.confusion_matrix){const c=cv.confusion_matrix;
     const T={vp:'Verdaderos positivos: malware correctamente detectado.',
@@ -533,37 +592,46 @@ async function loadGeneral(){
     '<table class="cm"><tr><th></th><th>Pred. Malicioso</th><th>Pred. Benigno</th></tr>'+
     '<tr><th>Real Malicioso</th><td class="vp" data-tip="'+T.vp+'">VP '+c.tp+'</td><td class="fn" data-tip="'+T.fn+'">FN '+c.fn+'</td></tr>'+
     '<tr><th>Real Benigno</th><td class="fp" data-tip="'+T.fp+'">FP '+c.fp+'</td><td class="vn" data-tip="'+T.vn+'">VN '+c.tn+'</td></tr></table>';}
-  // Comparativa pyscan vs GuardDog / ClamAV
+  // Comparativas: cada gráfico usa su propio subconjunto (no se mezclan tamaños)
   const MK=['recall','precision','f1','false_positive_rate'], ML=['Recall','Precisión','F1','Falsos pos.'];
-  let pys=null; const others=[];
-  if(d.guarddog){pys=d.guarddog.pyscan; if(d.guarddog.guarddog)others.push({label:'GuardDog (reglas)',m:d.guarddog.guarddog,c:'#E8791E'});}
-  if(d.antivirus){pys=pys||d.antivirus.pyscan; if(d.antivirus.clamav)others.push({label:'ClamAV (1 antivirus)',m:d.antivirus.clamav,c:'#7a7f8a'});}
-  if(d.virustotal){pys=pys||d.virustotal.pyscan; if(d.virustotal.virustotal)others.push({label:'VirusTotal (60+ motores)',m:d.virustotal.virustotal,c:'#1e8449'});}
-  if(pys){const ds=[{label:'pyscan (ML)',data:MK.map(k=>pys[k]),backgroundColor:'#1F3864'}];
-    for(const o of others)ds.push({label:o.label,data:MK.map(k=>o.m[k]),backgroundColor:o.c});
-    new Chart(document.getElementById('chCmp'),{type:'bar',
-      data:{labels:ML,datasets:ds},
-      options:{plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
-        label:c=>c.dataset.label+': '+c.parsed.y.toFixed(3),
+  const cmpOpts=()=>({plugins:{legend:{position:'bottom'},tooltip:{callbacks:{
+        label:c=>c.dataset.label+': '+NF(c.parsed.y,3),
         afterLabel:c=>c.dataIndex===3?wrap('En Falsos positivos, más bajo es mejor.'):[]}}},
-        scales:{y:{beginAtZero:true,max:1}}}});
-  }else{const n=document.getElementById('cmpNote'); n.style.display='block';
-    n.textContent='Corre experiment_compare_guarddog.py y experiment_compare_antivirus.py para poblar esta comparación.';}
+        scales:{y:{beginAtZero:true,max:1.1,ticks:{callback:v=>v<=1?NF(v,1):''}}}});
+  const g=d.guarddog, av=d.antivirus;
+  if(g||av){const base=(g&&g.pyscan)||(av&&av.pyscan); const n=(g&&g.n_samples)||(av&&av.n_samples);
+    const ds=[{label:'pyscan (ML)',data:MK.map(k=>base[k]),backgroundColor:'#1F3864'}];
+    if(g&&g.guarddog)ds.push({label:'GuardDog (reglas)',data:MK.map(k=>g.guarddog[k]),backgroundColor:'#E8791E'});
+    if(av&&av.clamav)ds.push({label:'ClamAV (antivirus)',data:MK.map(k=>av.clamav[k]),backgroundColor:'#7a7f8a'});
+    new Chart(document.getElementById('chCmp'),{type:'bar',data:{labels:ML,datasets:ds},options:cmpOpts(),plugins:[valueLabels]});
+    let sub=n?(NF(n,0)+' muestras del hold-out ('+NF(n/2,0)+' maliciosas y '+NF(n/2,0)+' benignas), las mismas para las tres herramientas. En Falsos positivos, más bajo es mejor.'):'';
+    if(av&&av.clamav&&av.clamav.tp===0)sub+=' ClamAV no detectó ninguna muestra (recall 0): sus barras valen 0.';
+    if(sub)document.getElementById('cmpSub1').textContent=sub;
+  }else{const nn=document.getElementById('cmpNote'); nn.style.display='block';
+    nn.textContent='Corre experiment_compare_guarddog.py y experiment_compare_antivirus.py para poblar esta comparación.';}
+  const vt=d.virustotal;
+  if(vt&&vt.virustotal&&vt.pyscan){
+    new Chart(document.getElementById('chCmpVT'),{type:'bar',data:{labels:ML,datasets:[
+      {label:'pyscan (ML)',data:MK.map(k=>vt.pyscan[k]),backgroundColor:'#1F3864'},
+      {label:'VirusTotal (60+ motores)',data:MK.map(k=>vt.virustotal[k]),backgroundColor:'#1e8449'}]},options:cmpOpts(),plugins:[valueLabels]});
+    document.getElementById('cmpSub2').textContent=NF(vt.n_samples,0)+' muestras ('+NF(vt.n_malicious,0)+' maliciosas y '+NF(vt.n_benign,0)+
+      ' benignas), limitadas por la cuota de la API gratuita de VirusTotal; malicioso si al menos '+vt.min_detections+' motores lo detectan. No es comparable directamente con el gráfico anterior.';
+  }else{document.getElementById('chCmpVT').parentElement.style.display='none';}
   // Importancia de características
   if(m&&m.feature_importance){const fi=m.feature_importance;const ks=Object.keys(fi);
     new Chart(document.getElementById('chImp'),{type:'bar',
       data:{labels:ks.map(k=>FEAT[k]?FEAT[k].l:k),datasets:[{data:ks.map(k=>fi[k]),backgroundColor:'#2E5C9E'}]},
       options:{indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{
-        label:c=>'importancia '+Number(c.parsed.x).toFixed(3),
+        label:c=>'importancia '+NF(c.parsed.x,3),
         afterLabel:c=>FEAT[ks[c.dataIndex]]?wrap(FEAT[ks[c.dataIndex]].d):[]}}},
-        scales:{x:{beginAtZero:true}}}});}
+        scales:{x:{beginAtZero:true,ticks:{callback:v=>NF(v,2)}}}}});}
   dashLoaded=true;
 }
 function renderHist(){const el=document.getElementById('hist'); if(!el)return;
   if(!history.length){el.innerHTML='<i>Aún no has analizado nada en esta sesión.</i>';return;}
   let h='<table><tr><th>Hora</th><th>Paquete</th><th>Veredicto</th><th>Score</th><th>Motivos</th></tr>';
   for(const r of history){h+='<tr><td>'+r.time+'</td><td><b>'+r.package+'</b> '+(r.version||'')+'</td><td>'+
-    badge(r.verdict)+'</td><td>'+(r.score!=null?r.score:'—')+'</td><td>'+(r.error||r.reasons.join('; ')||'—')+'</td></tr>';}
+    badge(r.verdict)+'</td><td>'+SC(r.score)+'</td><td>'+esc(r.error||r.reasons.join('; ')||'—')+'</td></tr>';}
   el.innerHTML=h+'</table>';}
 function downloadHist(fmt){
   if(!history.length){alert('No hay nada que exportar todavía.');return;}
@@ -581,13 +649,13 @@ function renderAnalysis(){
   document.getElementById('aKpis').innerHTML=
     kpi(sess.analizados,'analizados')+
     kpi(sess.maliciosos,'maliciosos')+
-    kpi(sess.sospechosos,'sospechosos')+
-    kpi(sess.benignos,'benignos');
+    kpi(sess.benignos,'benignos')+
+    kpi(sess.noexiste,'no existen en PyPI');
   // Gráfica de veredictos
-  const labels=['Benigno','Sospechoso','Malicioso','Otro'];
-  const vals=[sess.benignos,sess.sospechosos,sess.maliciosos,
-              sess.analizados-sess.benignos-sess.sospechosos-sess.maliciosos];
-  const cols=['#1e8449','#E8791E','#c0392b','#9aa3b2'];
+  const labels=['Benigno','Malicioso','No existe en PyPI','Error / sin modelo'];
+  const vals=[sess.benignos,sess.maliciosos,sess.noexiste,
+              sess.analizados-sess.benignos-sess.maliciosos-sess.noexiste];
+  const cols=['#1e8449','#c0392b','#5c6bc0','#9aa3b2'];
   if(charts.verdict)charts.verdict.destroy();
   charts.verdict=new Chart(document.getElementById('chVerdict'),{type:'doughnut',
     data:{labels,datasets:[{data:vals,backgroundColor:cols}]},

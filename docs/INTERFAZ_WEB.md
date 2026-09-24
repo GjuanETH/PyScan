@@ -52,8 +52,15 @@ La barra superior tiene tres vistas:
 Muestra los resultados del proyecto dentro de la propia herramienta, útil para la
 sustentación:
 
-- **KPI del modelo:** Recall (hold-out), F1, tasa de falsos positivos, PR-AUC,
-  tiempo máximo por paquete y tamaño del dataset.
+- **KPI del modelo:** Recall y F1 (hold-out), tasa de falsos positivos y PR-AUC
+  (validación cruzada), tiempo medio por paquete (con mediana, p95 y máximo en la
+  ayuda) y muestras usadas frente al manifiesto. Cada tarjeta indica su origen.
+- **Comparativas:** pyscan frente a GuardDog y ClamAV (300 muestras) y, aparte,
+  frente a VirusTotal (80 muestras, por la cuota de la API); no se mezclan tamaños.
+- **Veredicto "no existe":** un nombre que no está en PyPI no se puede instalar, por
+  lo que se reporta aparte (posible error de tipeo), no como sospechoso.
+- **Literales tipo 0.x.x.x:** son números de versión que el extractor AST toma por IP;
+  se ocultan en pantalla (limitación conocida), sin alterar la característica del modelo.
 - **Vectores de ataque:** gráfico de barras con la frecuencia de cada vector
   (V1–V7), leído de `data/analysis/attack_vectors.json`.
 - **Matriz de confusión** de la validación cruzada (VP/FN/FP/VN).
