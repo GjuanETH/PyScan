@@ -132,7 +132,11 @@ merge(f1, f2, OUT / "Anexo_F_Decisiones_de_arquitectura.docx")
 
 # --- Anexo I: Manual técnico --------------------------------------------------
 mt = docx.Document(BASE / "Manual_Tecnico.docx")
-replace_everywhere(mt, "La suite consta de 58 pruebas", "La suite consta de 64 pruebas")
+replace_everywhere(mt, "La suite consta de 58 pruebas con una cobertura del 91 %.",
+                   "La suite consta de 72 pruebas con una cobertura del 91 %. La integración continua "
+                   "(GitHub Actions) verifica en cada cambio el estilo (isort, black, flake8), las pruebas en "
+                   "Python 3.10, 3.11 y 3.12 y una cobertura mínima del 80 %; los mismos controles de estilo "
+                   "se ejecutan localmente con pre-commit (pre-commit install).")
 replace_everywhere(mt, "(anti Zip-Slip, symlink y zip-bomb)",
                    "(anti Zip-Slip y zip-bomb; omite los enlaces simbólicos y duros sin escribirlos en disco)")
 replace_everywhere(mt, "Orquesta el pipeline y expone los comandos.",
@@ -163,6 +167,8 @@ anchor = next(p for p in P if p.text.startswith("5. Cómo interpretar"))
 clone_before(anchor, h2_tpl, "4.5 Revisar las dependencias antes de cada commit (pre-commit / CI)")
 clone_before(anchor, code_tpl, "python -m pyscan.cli precommit requirements.txt")
 clone_before(anchor, code_tpl, "python -m pyscan.cli precommit --allow-unscanned requirements.txt")
+clone_before(anchor, body_tpl, "Tanto scan como precommit analizan varios paquetes en paralelo (4 por defecto); "
+             "la opción --workers ajusta ese número (1 = uno a la vez).")
 clone_before(anchor, body_tpl, "Analiza las dependencias del archivo y bloquea el commit (código de salida 1) si alguna resulta "
              "MALICIOSA, si su nombre es sospechoso de typosquatting o si no se pudo analizar. Con --allow-unscanned, "
              "las dependencias sin analizar solo se avisan. Para integrarlo con la herramienta pre-commit, el "
@@ -173,7 +179,24 @@ clone_before(anchor, body_tpl, "Abre una interfaz en el navegador (http://127.0.
              "se pegan los nombres de los paquetes o el contenido de un requirements.txt y se obtiene el veredicto "
              "de cada dependencia. Solo funciona en el equipo local y nunca ejecuta el código de los paquetes. "
              "También puede distribuirse como ejecutable de doble clic (build_exe.bat en Windows; ver docs/EJECUTABLE.md).")
+clone_before(anchor, body_tpl, "La interfaz tiene tres pestañas. Escanear: analiza paquetes de PyPI o un archivo .tar.gz/.whl "
+             "local; al hacer clic en una fila se ve, desglosado, por qué el modelo decidió: la evidencia encontrada "
+             "(llamadas, conexiones, entropía, archivo y línea) y las nueve características que recibe el modelo. "
+             "Análisis: resume lo escaneado en la sesión (veredictos, señales más frecuentes e historial descargable "
+             "en JSON o CSV). General: muestra las cifras fijas del modelo y de los experimentos, indicando en cada "
+             "una si proviene del hold-out o de la validación cruzada.")
+clone_before(anchor, body_tpl, "Veredictos en la interfaz: MALICIOSO o benigno según el puntaje del modelo frente al umbral "
+             "(0,45), que se muestra junto al puntaje; «no existe» cuando el nombre no está publicado en PyPI (no se "
+             "puede instalar; si se parece a un paquete conocido, probablemente es un error de tipeo, aunque un "
+             "atacante podría registrar ese nombre más adelante); y «error» cuando el paquete no pudo descargarse o "
+             "analizarse. En los paquetes benignos, las llamadas o conexiones encontradas se muestran como "
+             "«observado, no concluyente», porque son habituales en librerías legítimas.")
 replace_everywhere(mu, "6. Ejemplo de salida", "6. Ejemplo de salida (ilustrativo)")
+exits = next(p for p in mu.paragraphs if p.text.startswith("Códigos de salida"))
+clone_before(docx.text.paragraph.Paragraph(exits._p.getnext(), exits._parent), exits,
+             "Limitación conocida: el extractor de código puede tomar números de versión como «0.3.30.0» por "
+             "direcciones IP. La interfaz web los oculta al mostrar la evidencia; el modelo sí los recibe, igual "
+             "que durante su entrenamiento.", bold=False)
 trouble = next(p for p in mu.paragraphs if p.text.startswith("Un paquete no se pudo analizar"))
 after = trouble._p.getnext()
 clone_before(docx.text.paragraph.Paragraph(after, trouble._parent), trouble,

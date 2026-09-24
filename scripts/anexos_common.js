@@ -76,7 +76,7 @@ const n = (v, d = 3) => { const [i, f] = Math.abs(v).toFixed(d).split(".");
 const pct = (v, d = 1) => (v * 100).toFixed(d).replace(".", ",") + " %";
 const miles = (v) => v.toLocaleString("es-CO").replace(/,/g, ".");
 
-function save(children, file) {
+function save(children, file, outDir = OUT_DIR) {
   const doc = new Document({
     creator: "pyscan - Trabajo de Grado",
     styles: { default: { document: { run: { font: FONT, size: 24 } } } },
@@ -88,9 +88,9 @@ function save(children, file) {
       children,
     }],
   });
-  fs.mkdirSync(OUT_DIR, { recursive: true });
+  fs.mkdirSync(outDir, { recursive: true });
   return Packer.toBuffer(doc).then((buf) => {
-    fs.writeFileSync(path.join(OUT_DIR, file), buf);
+    fs.writeFileSync(path.join(outDir, file), buf);
     console.log("DOCX:", file, buf.length, "bytes");
   });
 }

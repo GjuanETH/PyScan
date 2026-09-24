@@ -1,0 +1,32 @@
+digraph G {
+  graph [rankdir=TB, fontname="Liberation Sans", nodesep=0.35, ranksep=0.45, bgcolor="white", pad=0.2];
+  node  [shape=box, style="rounded,filled", fontname="Liberation Sans", fontsize=11, color="#1F3864", fillcolor="#E8EEF7", margin="0.18,0.08"];
+  edge  [color="#52514e", fontname="Liberation Sans", fontsize=9, fontcolor="#52514e"];
+
+  csc  [label="Cadena de suministro de software\n(paquetes de terceros en PyPI)", fillcolor="#1F3864", fontcolor="white"];
+  pm   [label="Paquete malicioso"];
+  vec  [label="Vectores de ataque\ntyposquatting · ejecución en instalación\nofuscación · exfiltración · comandos", fillcolor="#FFFFFF"];
+  ae   [label="Análisis estático\n(sin ejecutar el código)", fillcolor="#1F3864", fontcolor="white"];
+  lev  [label="Distancia de Levenshtein\n(nombre)"];
+  ent  [label="Entropía de Shannon\n(ventanas de 256 bytes)"];
+  ast  [label="Árbol de sintaxis abstracta\n(llamadas, red, hooks)"];
+  fv   [label="Vector de 9 características"];
+  ml   [label="Aprendizaje supervisado\nRandom Forest (umbral 0,45)", fillcolor="#1F3864", fontcolor="white"];
+  out  [label="Veredicto y reporte\nJSON · SARIF · códigos de salida"];
+  ci   [label="Integración en DevSecOps\nCI · hook de pre-commit"];
+  iso  [label="Calidad ISO/IEC 25010:2023\nKPI: Recall, F1, falsos positivos,\ntiempo, memoria, cobertura", fillcolor="#FFFFFF"];
+
+  csc -> pm  [label=" expuesta a"];
+  pm  -> vec [label=" se manifiesta en"];
+  vec -> ae  [label=" detectables por"];
+  ae  -> lev; ae -> ent; ae -> ast;
+  lev -> fv; ent -> fv; ast -> fv;
+  fv  -> ml  [label=" alimenta"];
+  ml  -> out [label=" produce"];
+  out -> ci  [label=" se integra en"];
+  iso -> ml  [style=dashed, label=" evalúa"];
+  iso -> out [style=dashed];
+
+  {rank=same; lev; ent; ast;}
+  {rank=same; ml; iso;}
+}

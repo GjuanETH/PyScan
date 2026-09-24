@@ -6,13 +6,13 @@ const hueco = (txt) => new Paragraph({ alignment: AlignmentType.CENTER, spacing:
     left: { style: BorderStyle.DASHED, size: 6, color: "999999" }, right: { style: BorderStyle.DASHED, size: 6, color: "999999" } },
   children: [new TextRun({ text: `[INSERTAR CAPTURA: ${txt}]`, font: "Arial", size: 22, bold: true, color: "C00000" })] });
 const c = [];
-c.push(...title("ANEXO D", "EVIDENCIA DEL PRODUCT BACKLOG EN AZURE DEVOPS"));
-c.push(p("Este anexo presenta la evidencia de la gestión del proyecto en Azure DevOps (organización jdgutierrez017, proyecto Tesis), citada en la sección 2.6: el Product Backlog con historias de usuario y criterios de aceptación, los sprints ejecutados y el repositorio de código."));
+c.push(...title("ANEXO D", "EVIDENCIA DE LA GESTIÓN DEL PROYECTO Y DEL REPOSITORIO"));
+c.push(p("Este anexo presenta la evidencia de la gestión del proyecto citada en la sección 2.6. La planificación se llevó en Azure Boards (organización jdgutierrez017, proyecto Tesis) con la plantilla de proceso Basic: el Product Backlog se organizó en cinco épicas, una por fase del trabajo, desglosadas en issues y tareas, y se definieron cinco iteraciones, una por fase. Al cierre, cada tarea quedó con su estado final y, cuando correspondió, con la etiqueta «parcial» o «descartado» y un comentario que explica la decisión, de modo que el tablero refleja el alcance realmente implementado. El código se publicó en un repositorio abierto de GitHub con integración continua."));
 const items = [
-  ["D.1 Product Backlog", "Figura D.1. Product Backlog con historias de usuario (Azure Boards).", "vista Backlogs de Azure Boards con las historias de usuario y su estado"],
-  ["D.2 Criterios de aceptación", "Figura D.2. Detalle de una historia de usuario con criterios de aceptación.", "una historia abierta mostrando descripción y criterios de aceptación"],
-  ["D.3 Sprints ejecutados", "Figura D.3. Sprints del proyecto (Azure Boards).", "vista Sprints / Taskboard o la lista de iteraciones"],
-  ["D.4 Repositorio y trazabilidad", "Figura D.4. Historial de commits del repositorio (Azure Repos).", "Azure Repos > Commits del repositorio Tesis"],
+  ["D.1 Product Backlog por fases", "Figura D.1. Product Backlog en Azure Boards: épicas por fase, issues y tareas.", "Azure Boards > Backlogs, nivel Epics expandido (Fases 1 a 5)"],
+  ["D.2 Estado final y decisiones de alcance", "Figura D.2. Tareas con etiqueta «parcial» o «descartado» y su comentario de cierre.", "una tarea descartada abierta (p. ej. «Programar Agregador de Scores ponderado») mostrando etiqueta y comentario"],
+  ["D.3 Iteraciones", "Figura D.3. Iteraciones del proyecto (Fase 1 a Fase 5) con sus fechas.", "Project settings > Boards > Project configuration > Iterations"],
+  ["D.4 Repositorio público e integración continua", "Figura D.4. Repositorio en GitHub con la ejecución de la integración continua en verde.", "https://github.com/GjuanETH/PyScan > pestaña Actions con la última ejecución de CI"],
 ];
 for (const [h, cap, hint] of items) { c.push(h1(h)); c.push(caption(cap)); c.push(hueco(hint)); c.push(source()); }
-save(c, "Anexo_D_Evidencia_backlog_Azure_DevOps.docx");
+save(c, "Anexo_D_Evidencia_gestion_y_repositorio.docx");
