@@ -1,0 +1,81 @@
+{
+  "entorno": {
+    "cpu": "AMD Ryzen 5 8645HS w/ Radeon 760M Graphics",
+    "nucleos_logicos": 2,
+    "ram_total_gb": 9.06,
+    "sistema_operativo": "Ubuntu 26.04 LTS",
+    "versiones": {
+      "python": "3.14.4",
+      "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+      "sklearn": "1.9.0",
+      "imblearn": "0.14.2",
+      "xgboost": "3.4.1",
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "joblib": "1.5.3",
+      "rapidfuzz": "3.14.5"
+    },
+    "concurrencia": "secuencial (1 paquete a la vez)",
+    "cache_caracteristicas": "desactivada",
+    "fecha": "2026-11-05T19:14:12.165792+00:00",
+    "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado"
+  },
+  "n_intentados": 100,
+  "n_procesados": 100,
+  "n_fallidos": 0,
+  "fallos": [],
+  "tiempo_seg_por_etapa": {
+    "extraccion": {
+      "min": 0.0,
+      "mediana": 0.014,
+      "media": 0.089,
+      "p95": 0.541,
+      "max": 2.052
+    },
+    "caracteristicas": {
+      "min": 0.001,
+      "mediana": 0.018,
+      "media": 0.398,
+      "p95": 2.518,
+      "max": 5.273
+    },
+    "inferencia": {
+      "min": 0.059,
+      "mediana": 0.071,
+      "media": 0.075,
+      "p95": 0.099,
+      "max": 0.142
+    },
+    "total": {
+      "min": 0.064,
+      "mediana": 0.117,
+      "media": 0.562,
+      "p95": 3.269,
+      "max": 6.126
+    }
+  },
+  "pico_python_mb": {
+    "min": 0.42,
+    "mediana": 0.825,
+    "media": 4.515,
+    "p95": 17.76,
+    "max": 79.93
+  },
+  "rss_pico_proceso_mb": {
+    "inicio": 203.9,
+    "con_modelo_cargado": 223.4,
+    "final": 369.9
+  },
+  "herramientas_memoria": {
+    "pico_python_mb": "tracemalloc (por análisis)",
+    "rss_pico_proceso_mb": "resource.getrusage ru_maxrss"
+  },
+  "kpi": {
+    "tiempo_max_seg": 6.126,
+    "tiempo_limite_seg": 120,
+    "cumple_tiempo": true,
+    "rss_max_mb": 369.9,
+    "rss_limite_mb": 2048,
+    "cumple_ram": true
+  }
+}

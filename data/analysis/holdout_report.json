@@ -1,0 +1,429 @@
+{
+  "umbral": 0.63,
+  "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+  "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+  "holdout": {
+    "n": 893,
+    "matriz": {
+      "vp": 357,
+      "fn": 43,
+      "fp": 22,
+      "vn": 471
+    },
+    "recall": {
+      "k": 357,
+      "n": 400,
+      "valor": 0.8925,
+      "ic95": [
+        0.8583,
+        0.9192
+      ]
+    },
+    "fpr": {
+      "k": 22,
+      "n": 493,
+      "valor": 0.0446,
+      "ic95": [
+        0.0297,
+        0.0666
+      ]
+    },
+    "precision": {
+      "k": 357,
+      "n": 379,
+      "valor": 0.942,
+      "ic95": [
+        0.9137,
+        0.9614
+      ]
+    },
+    "f1": 0.9166,
+    "por_fuente": {
+      "aleatoria": {
+        "clase": "benigna",
+        "fpr": {
+          "k": 22,
+          "n": 109,
+          "valor": 0.2018,
+          "ic95": [
+            0.1372,
+            0.2867
+          ]
+        }
+      },
+      "datadog": {
+        "clase": "maliciosa",
+        "recall": {
+          "k": 49,
+          "n": 56,
+          "valor": 0.875,
+          "ic95": [
+            0.7637,
+            0.9381
+          ]
+        }
+      },
+      "malregistry": {
+        "clase": "maliciosa",
+        "recall": {
+          "k": 308,
+          "n": 344,
+          "valor": 0.8953,
+          "ic95": [
+            0.8585,
+            0.9234
+          ]
+        }
+      },
+      "top": {
+        "clase": "benigna",
+        "fpr": {
+          "k": 0,
+          "n": 384,
+          "valor": 0.0,
+          "ic95": [
+            0.0,
+            0.0099
+          ]
+        }
+      }
+    }
+  },
+  "validacion_cruzada_oof": {
+    "n": 3556,
+    "matriz": {
+      "vp": 1480,
+      "fn": 120,
+      "fp": 69,
+      "vn": 1887
+    },
+    "recall": {
+      "k": 1480,
+      "n": 1600,
+      "valor": 0.925,
+      "ic95": [
+        0.9111,
+        0.9369
+      ]
+    },
+    "fpr": {
+      "k": 69,
+      "n": 1956,
+      "valor": 0.0353,
+      "ic95": [
+        0.028,
+        0.0444
+      ]
+    },
+    "precision": {
+      "k": 1480,
+      "n": 1549,
+      "valor": 0.9555,
+      "ic95": [
+        0.944,
+        0.9647
+      ]
+    },
+    "f1": 0.94,
+    "por_fuente": {
+      "aleatoria": {
+        "clase": "benigna",
+        "fpr": {
+          "k": 68,
+          "n": 369,
+          "valor": 0.1843,
+          "ic95": [
+            0.148,
+            0.227
+          ]
+        }
+      },
+      "datadog": {
+        "clase": "maliciosa",
+        "recall": {
+          "k": 238,
+          "n": 278,
+          "valor": 0.8561,
+          "ic95": [
+            0.81,
+            0.8925
+          ]
+        }
+      },
+      "malregistry": {
+        "clase": "maliciosa",
+        "recall": {
+          "k": 1242,
+          "n": 1322,
+          "valor": 0.9395,
+          "ic95": [
+            0.9253,
+            0.9511
+          ]
+        }
+      },
+      "top": {
+        "clase": "benigna",
+        "fpr": {
+          "k": 1,
+          "n": 1587,
+          "valor": 0.0006,
+          "ic95": [
+            0.0001,
+            0.0036
+          ]
+        }
+      }
+    }
+  },
+  "prevalencia": {
+    "supuesto": "La proyección asume que Recall y FPR no cambian con la prevalencia; como el FPR difiere entre fuentes, se dan escenarios.",
+    "recall_usado": 0.8925,
+    "escenarios": {
+      "global (hold-out) (FPR=0.0446)": {
+        "50.0% maliciosos": {
+          "precision": 0.9524,
+          "por_1000_dependencias": {
+            "alertas": 468.5,
+            "falsas": 22.3
+          }
+        },
+        "10.0% maliciosos": {
+          "precision": 0.6898,
+          "por_1000_dependencias": {
+            "alertas": 129.4,
+            "falsas": 40.1
+          }
+        },
+        "5.0% maliciosos": {
+          "precision": 0.513,
+          "por_1000_dependencias": {
+            "alertas": 87.0,
+            "falsas": 42.4
+          }
+        },
+        "1.0% maliciosos": {
+          "precision": 0.1681,
+          "por_1000_dependencias": {
+            "alertas": 53.1,
+            "falsas": 44.2
+          }
+        },
+        "0.5% maliciosos": {
+          "precision": 0.0914,
+          "por_1000_dependencias": {
+            "alertas": 48.8,
+            "falsas": 44.4
+          }
+        },
+        "0.1% maliciosos": {
+          "precision": 0.0196,
+          "por_1000_dependencias": {
+            "alertas": 45.4,
+            "falsas": 44.6
+          }
+        }
+      },
+      "FPR límite superior IC95 (FPR=0.0666)": {
+        "50.0% maliciosos": {
+          "precision": 0.9306,
+          "por_1000_dependencias": {
+            "alertas": 479.5,
+            "falsas": 33.3
+          }
+        },
+        "10.0% maliciosos": {
+          "precision": 0.5982,
+          "por_1000_dependencias": {
+            "alertas": 149.2,
+            "falsas": 59.9
+          }
+        },
+        "5.0% maliciosos": {
+          "precision": 0.4136,
+          "por_1000_dependencias": {
+            "alertas": 107.9,
+            "falsas": 63.3
+          }
+        },
+        "1.0% maliciosos": {
+          "precision": 0.1192,
+          "por_1000_dependencias": {
+            "alertas": 74.9,
+            "falsas": 65.9
+          }
+        },
+        "0.5% maliciosos": {
+          "precision": 0.0631,
+          "por_1000_dependencias": {
+            "alertas": 70.7,
+            "falsas": 66.3
+          }
+        },
+        "0.1% maliciosos": {
+          "precision": 0.0132,
+          "por_1000_dependencias": {
+            "alertas": 67.4,
+            "falsas": 66.5
+          }
+        }
+      },
+      "optimista: FPR de paquetes Top (FPR=0.0)": {
+        "50.0% maliciosos": {
+          "precision": 1.0,
+          "por_1000_dependencias": {
+            "alertas": 446.2,
+            "falsas": 0.0
+          }
+        },
+        "10.0% maliciosos": {
+          "precision": 1.0,
+          "por_1000_dependencias": {
+            "alertas": 89.2,
+            "falsas": 0.0
+          }
+        },
+        "5.0% maliciosos": {
+          "precision": 1.0,
+          "por_1000_dependencias": {
+            "alertas": 44.6,
+            "falsas": 0.0
+          }
+        },
+        "1.0% maliciosos": {
+          "precision": 1.0,
+          "por_1000_dependencias": {
+            "alertas": 8.9,
+            "falsas": 0.0
+          }
+        },
+        "0.5% maliciosos": {
+          "precision": 1.0,
+          "por_1000_dependencias": {
+            "alertas": 4.5,
+            "falsas": 0.0
+          }
+        },
+        "0.1% maliciosos": {
+          "precision": 1.0,
+          "por_1000_dependencias": {
+            "alertas": 0.9,
+            "falsas": 0.0
+          }
+        }
+      },
+      "pesimista: FPR de paquetes aleatorios (FPR=0.2018)": {
+        "50.0% maliciosos": {
+          "precision": 0.8156,
+          "por_1000_dependencias": {
+            "alertas": 547.1,
+            "falsas": 100.9
+          }
+        },
+        "10.0% maliciosos": {
+          "precision": 0.3295,
+          "por_1000_dependencias": {
+            "alertas": 270.9,
+            "falsas": 181.6
+          }
+        },
+        "5.0% maliciosos": {
+          "precision": 0.1888,
+          "por_1000_dependencias": {
+            "alertas": 236.3,
+            "falsas": 191.7
+          }
+        },
+        "1.0% maliciosos": {
+          "precision": 0.0428,
+          "por_1000_dependencias": {
+            "alertas": 208.7,
+            "falsas": 199.8
+          }
+        },
+        "0.5% maliciosos": {
+          "precision": 0.0217,
+          "por_1000_dependencias": {
+            "alertas": 205.3,
+            "falsas": 200.8
+          }
+        },
+        "0.1% maliciosos": {
+          "precision": 0.0044,
+          "por_1000_dependencias": {
+            "alertas": 202.5,
+            "falsas": 201.6
+          }
+        }
+      }
+    }
+  },
+  "variantes": {
+    "variante_comparacion_smote": {
+      "sobremuestreo": "smote",
+      "cv": {
+        "threshold": 0.64,
+        "n_samples": 3556,
+        "recall": 0.925,
+        "precision": 0.9617,
+        "f1": 0.943,
+        "pr_auc": 0.9886,
+        "false_positive_rate": 0.0302,
+        "confusion_matrix": {
+          "tn": 1897,
+          "fp": 59,
+          "fn": 120,
+          "tp": 1480
+        }
+      },
+      "holdout": {
+        "threshold": 0.64,
+        "n_samples": 893,
+        "recall": 0.8925,
+        "precision": 0.9469,
+        "f1": 0.9189,
+        "pr_auc": 0.9862,
+        "false_positive_rate": 0.0406,
+        "confusion_matrix": {
+          "tn": 473,
+          "fp": 20,
+          "fn": 43,
+          "tp": 357
+        }
+      }
+    },
+    "oficial": {
+      "sobremuestreo": "smotenc",
+      "cv": {
+        "threshold": 0.63,
+        "n_samples": 3556,
+        "recall": 0.925,
+        "precision": 0.9555,
+        "f1": 0.94,
+        "pr_auc": 0.9893,
+        "false_positive_rate": 0.0353,
+        "confusion_matrix": {
+          "tn": 1887,
+          "fp": 69,
+          "fn": 120,
+          "tp": 1480
+        }
+      },
+      "holdout": {
+        "threshold": 0.63,
+        "n_samples": 893,
+        "recall": 0.8925,
+        "precision": 0.942,
+        "f1": 0.9166,
+        "pr_auc": 0.9861,
+        "false_positive_rate": 0.0446,
+        "confusion_matrix": {
+          "tn": 471,
+          "fp": 22,
+          "fn": 43,
+          "tp": 357
+        }
+      }
+    }
+  }
+}

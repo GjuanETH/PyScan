@@ -1,0 +1,663 @@
+=== python scripts/audit_independence.py --resplit completo ===
+Muestras en los manifiestos: 4479
+  [3400/4479] huellas
+
+Grupos: 4304 | grupos a ambos lados: 43
+Hold-out con pariente en entrenamiento: 46 (5.13 %)
+  Jaccard >= 0,8: 4
+  huella idéntica: 15
+  mismo nombre y versión: 11
+  mismo nombre, otra versión: 28
+
+Informe: data/analysis/independence_audit.json | pares: data/analysis/independence_pairs.csv
+Repartición agrupada: 1410 muestras cambian de lado; grupos a ambos lados después: 0
+Manifiestos escritos: data/train_grouped.csv, data/holdout_grouped.csv
+=== python scripts/train_model.py ===
+== 1/5 Características (train_grouped.csv) ==
+  [444/3583] excluida: data/benign/nvidia-cufft-12.3.0.29/nvidia_cufft-12.3.0.29-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [519/3583] excluida: data/benign/basedpyright-1.39.10/basedpyright-1.39.10.tar.gz (rechazado por extracción segura)
+  [602/3583] excluida: data/benign/nvidia-cublas-13.6.1.10/nvidia_cublas-13.6.1.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [706/3583] excluida: data/benign/ansible-14.3.1/ansible-14.3.1.tar.gz (rechazado por extracción segura)
+  [1130/3583] excluida: data/benign/nvidia-cublas-cu12-12.9.2.10/nvidia_cublas_cu12-12.9.2.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1150/3583] excluida: data/benign/nvidia-cusolver-cu12-11.7.5.82/nvidia_cusolver_cu12-11.7.5.82-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1197/3583] excluida: data/benign/triton-3.7.1/triton-3.7.1-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (corrupto o ilegible)
+  [1223/3583] excluida: data/benign/nvidia-nvshmem-cu13-3.7.2/nvidia_nvshmem_cu13-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1265/3583] excluida: data/benign/nvidia-nccl-cu12-2.31.2/nvidia_nccl_cu12-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [1297/3583] excluida: data/benign/nvidia-cusolver-12.2.6.9/nvidia_cusolver-12.2.6.9-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1445/3583] excluida: data/benign/pypi_random/oet-mcp-server-0.1.0/oet_mcp_server-0.1.0.tar.gz (rechazado por extracción segura)
+  [1623/3583] excluida: data/benign/nvidia-cufft-cu12-11.4.1.4/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1655/3583] excluida: data/benign/nvidia-cusparselt-cu13-0.9.1/nvidia_cusparselt_cu13-0.9.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  [1750/3583] excluida: data/benign/teradatasql-20.0.0.65/teradatasql-20.0.0.65-py3-none-any.whl (corrupto o ilegible)
+  [1971/3583] excluida: data/benign/nvidia-cudnn-cu13-9.24.0.43/nvidia_cudnn_cu13-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [2126/3583] excluida: data/benign/oci-2.184.1/oci-2.184.1.tar.gz (rechazado por extracción segura)
+  [2294/3583] excluida: data/benign/nvidia-nvshmem-cu12-3.7.2/nvidia_nvshmem_cu12-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2317/3583] excluida: data/benign/torch-2.13.0/torch-2.13.0-cp310-cp310-macosx_14_0_arm64.whl (corrupto o ilegible)
+  [2430/3583] excluida: data/benign/pyspark-4.2.0/pyspark-4.2.0.tar.gz (corrupto o ilegible)
+  [2779/3583] excluida: data/benign/opencv-contrib-python-5.0.0.93/opencv_contrib_python-5.0.0.93.tar.gz (corrupto o ilegible)
+  [2805/3583] excluida: data/benign/nvidia-cusparse-12.8.2.51/nvidia_cusparse-12.8.2.51-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2813/3583] excluida: data/benign/catboost-1.2.10/catboost-1.2.10.tar.gz (rechazado por extracción segura)
+  [2940/3583] excluida: data/benign/nvidia-cusparse-cu12-12.5.10.65/nvidia_cusparse_cu12-12.5.10.65-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [3155/3583] excluida: data/benign/jaxlib-0.11.0/jaxlib-0.11.0-cp312-cp312-macosx_11_0_arm64.whl (rechazado por extracción segura)
+  [3199/3583] excluida: data/benign/nvidia-nccl-cu13-2.31.2/nvidia_nccl_cu13-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [3429/3583] excluida: data/benign/nvidia-cuda-nvrtc-cu12-12.9.86/nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (rechazado por extracción segura)
+  Excluidas 27 muestras de train_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [3445/3583] excluida: data/benign/nbclassic-1.3.3/nbclassic-1.3.3.tar.gz (rechazado por extracción segura)
+Muestras: 3556 (maliciosas=1600, benignas=1956); validación agrupada
+
+== 2/5 Validación cruzada (k=5, sobremuestreo=smotenc) ==
+  random_forest: recall=0.925 f1=0.94 pr_auc=0.9893 fp=0.0353 umbral=0.63
+  xgboost: recall=0.9525 f1=0.9393 pr_auc=0.988 fp=0.0619 umbral=0.43
+
+== 3/5 Mejor modelo: random_forest (umbral 0.63) ==
+== 4/5 Reentrenando con todo el entrenamiento ==
+== 5/5 Evaluación única en el hold-out (umbral fijado en CV) ==
+  [184/896] excluida: data/benign/nvidia-cudnn-cu12-9.24.0.43/nvidia_cudnn_cu12-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [345/896] excluida: data/benign/nvidia-cusparselt-cu12-0.8.1/nvidia_cusparselt_cu12-0.8.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  Excluidas 3 muestras de holdout_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [670/896] excluida: data/benign/tensorflow-2.21.0/tensorflow-2.21.0-cp310-cp310-macosx_12_0_arm64.whl (corrupto o ilegible)
+  hold-out: recall=0.8925 f1=0.9166 fp=0.0446 matriz={'tn': 471, 'fp': 22, 'fn': 43, 'tp': 357}
+
+Métricas: data/models/metrics.json
+Modelo:   data/models/model.joblib (sha256 18749c474f57ec04…)
+KPI (hold-out): Recall>=0.90 NO | F1>=0.85 OK | FP<=10% OK
+=== python scripts/train_model.py --sampler smote --tag comparacion_smote ===
+== 1/5 Características (train_grouped.csv) ==
+  [444/3583] excluida: data/benign/nvidia-cufft-12.3.0.29/nvidia_cufft-12.3.0.29-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [519/3583] excluida: data/benign/basedpyright-1.39.10/basedpyright-1.39.10.tar.gz (rechazado por extracción segura)
+  [602/3583] excluida: data/benign/nvidia-cublas-13.6.1.10/nvidia_cublas-13.6.1.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [706/3583] excluida: data/benign/ansible-14.3.1/ansible-14.3.1.tar.gz (rechazado por extracción segura)
+  [1130/3583] excluida: data/benign/nvidia-cublas-cu12-12.9.2.10/nvidia_cublas_cu12-12.9.2.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1150/3583] excluida: data/benign/nvidia-cusolver-cu12-11.7.5.82/nvidia_cusolver_cu12-11.7.5.82-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1197/3583] excluida: data/benign/triton-3.7.1/triton-3.7.1-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (corrupto o ilegible)
+  [1223/3583] excluida: data/benign/nvidia-nvshmem-cu13-3.7.2/nvidia_nvshmem_cu13-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1265/3583] excluida: data/benign/nvidia-nccl-cu12-2.31.2/nvidia_nccl_cu12-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [1297/3583] excluida: data/benign/nvidia-cusolver-12.2.6.9/nvidia_cusolver-12.2.6.9-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1445/3583] excluida: data/benign/pypi_random/oet-mcp-server-0.1.0/oet_mcp_server-0.1.0.tar.gz (rechazado por extracción segura)
+  [1623/3583] excluida: data/benign/nvidia-cufft-cu12-11.4.1.4/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1655/3583] excluida: data/benign/nvidia-cusparselt-cu13-0.9.1/nvidia_cusparselt_cu13-0.9.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  [1750/3583] excluida: data/benign/teradatasql-20.0.0.65/teradatasql-20.0.0.65-py3-none-any.whl (corrupto o ilegible)
+  [1971/3583] excluida: data/benign/nvidia-cudnn-cu13-9.24.0.43/nvidia_cudnn_cu13-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [2126/3583] excluida: data/benign/oci-2.184.1/oci-2.184.1.tar.gz (rechazado por extracción segura)
+  [2294/3583] excluida: data/benign/nvidia-nvshmem-cu12-3.7.2/nvidia_nvshmem_cu12-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2317/3583] excluida: data/benign/torch-2.13.0/torch-2.13.0-cp310-cp310-macosx_14_0_arm64.whl (corrupto o ilegible)
+  [2430/3583] excluida: data/benign/pyspark-4.2.0/pyspark-4.2.0.tar.gz (corrupto o ilegible)
+  [2779/3583] excluida: data/benign/opencv-contrib-python-5.0.0.93/opencv_contrib_python-5.0.0.93.tar.gz (corrupto o ilegible)
+  [2805/3583] excluida: data/benign/nvidia-cusparse-12.8.2.51/nvidia_cusparse-12.8.2.51-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2813/3583] excluida: data/benign/catboost-1.2.10/catboost-1.2.10.tar.gz (rechazado por extracción segura)
+  [2940/3583] excluida: data/benign/nvidia-cusparse-cu12-12.5.10.65/nvidia_cusparse_cu12-12.5.10.65-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [3155/3583] excluida: data/benign/jaxlib-0.11.0/jaxlib-0.11.0-cp312-cp312-macosx_11_0_arm64.whl (rechazado por extracción segura)
+  [3199/3583] excluida: data/benign/nvidia-nccl-cu13-2.31.2/nvidia_nccl_cu13-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [3429/3583] excluida: data/benign/nvidia-cuda-nvrtc-cu12-12.9.86/nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (rechazado por extracción segura)
+  Excluidas 27 muestras de train_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [3445/3583] excluida: data/benign/nbclassic-1.3.3/nbclassic-1.3.3.tar.gz (rechazado por extracción segura)
+Muestras: 3556 (maliciosas=1600, benignas=1956); validación agrupada
+
+== 2/5 Validación cruzada (k=5, sobremuestreo=smote) ==
+  random_forest: recall=0.925 f1=0.943 pr_auc=0.9886 fp=0.0302 umbral=0.64
+  xgboost: recall=0.96 f1=0.9389 pr_auc=0.988 fp=0.0695 umbral=0.32
+
+== 3/5 Mejor modelo: random_forest (umbral 0.64) ==
+== 4/5 Reentrenando con todo el entrenamiento ==
+== 5/5 Evaluación única en el hold-out (umbral fijado en CV) ==
+  [184/896] excluida: data/benign/nvidia-cudnn-cu12-9.24.0.43/nvidia_cudnn_cu12-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [345/896] excluida: data/benign/nvidia-cusparselt-cu12-0.8.1/nvidia_cusparselt_cu12-0.8.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  Excluidas 3 muestras de holdout_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [670/896] excluida: data/benign/tensorflow-2.21.0/tensorflow-2.21.0-cp310-cp310-macosx_12_0_arm64.whl (corrupto o ilegible)
+  hold-out: recall=0.8925 f1=0.9189 fp=0.0406 matriz={'tn': 473, 'fp': 20, 'fn': 43, 'tp': 357}
+
+Métricas: data/analysis/variante_comparacion_smote/metrics.json
+KPI (hold-out): Recall>=0.90 NO | F1>=0.85 OK | FP<=10% OK
+=== python scripts/report_holdout.py ===
+Hold-out (n=893, umbral 0.63)
+  Matriz: VP=357 FN=43 FP=22 VN=471
+  recall: 0.8925 (IC95 0.8583–0.9192)
+  fpr: 0.0446 (IC95 0.0297–0.0666)
+  precision: 0.942 (IC95 0.9137–0.9614)
+  F1: 0.9166
+
+| Fuente | Clase | Métrica | Valor | IC 95 % | n |
+|---|---|---|---|---|---|
+| aleatoria | benigna | fpr | 0.2018 | 0.1372–0.2867 | 109 |
+| datadog | maliciosa | recall | 0.875 | 0.7637–0.9381 | 56 |
+| malregistry | maliciosa | recall | 0.8953 | 0.8585–0.9234 | 344 |
+| top | benigna | fpr | 0.0 | 0.0–0.0099 | 384 |
+
+Precisión proyectada por escenario:
+  global (hold-out) (FPR=0.0446): 50.0% maliciosos: 0.9524, 10.0% maliciosos: 0.6898, 5.0% maliciosos: 0.513, 1.0% maliciosos: 0.1681, 0.5% maliciosos: 0.0914, 0.1% maliciosos: 0.0196
+  FPR límite superior IC95 (FPR=0.0666): 50.0% maliciosos: 0.9306, 10.0% maliciosos: 0.5982, 5.0% maliciosos: 0.4136, 1.0% maliciosos: 0.1192, 0.5% maliciosos: 0.0631, 0.1% maliciosos: 0.0132
+  optimista: FPR de paquetes Top (FPR=0.0): 50.0% maliciosos: 1.0, 10.0% maliciosos: 1.0, 5.0% maliciosos: 1.0, 1.0% maliciosos: 1.0, 0.5% maliciosos: 1.0, 0.1% maliciosos: 1.0
+  pesimista: FPR de paquetes aleatorios (FPR=0.2018): 50.0% maliciosos: 0.8156, 10.0% maliciosos: 0.3295, 5.0% maliciosos: 0.1888, 1.0% maliciosos: 0.0428, 0.5% maliciosos: 0.0217, 0.1% maliciosos: 0.0044
+  Variante variante_comparacion_smote (smote): CV F1=0.943 Recall=0.925 | hold-out F1=0.9189 Recall=0.8925
+  Variante oficial (smotenc): CV F1=0.94 Recall=0.925 | hold-out F1=0.9166 Recall=0.8925
+
+Datos: data/analysis/holdout_report.json
+=== python scripts/baseline_rules.py ===
+  [444/3583] excluida: data/benign/nvidia-cufft-12.3.0.29/nvidia_cufft-12.3.0.29-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [519/3583] excluida: data/benign/basedpyright-1.39.10/basedpyright-1.39.10.tar.gz (rechazado por extracción segura)
+  [602/3583] excluida: data/benign/nvidia-cublas-13.6.1.10/nvidia_cublas-13.6.1.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [706/3583] excluida: data/benign/ansible-14.3.1/ansible-14.3.1.tar.gz (rechazado por extracción segura)
+  [1130/3583] excluida: data/benign/nvidia-cublas-cu12-12.9.2.10/nvidia_cublas_cu12-12.9.2.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1150/3583] excluida: data/benign/nvidia-cusolver-cu12-11.7.5.82/nvidia_cusolver_cu12-11.7.5.82-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1197/3583] excluida: data/benign/triton-3.7.1/triton-3.7.1-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (corrupto o ilegible)
+  [1223/3583] excluida: data/benign/nvidia-nvshmem-cu13-3.7.2/nvidia_nvshmem_cu13-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1265/3583] excluida: data/benign/nvidia-nccl-cu12-2.31.2/nvidia_nccl_cu12-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [1297/3583] excluida: data/benign/nvidia-cusolver-12.2.6.9/nvidia_cusolver-12.2.6.9-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1445/3583] excluida: data/benign/pypi_random/oet-mcp-server-0.1.0/oet_mcp_server-0.1.0.tar.gz (rechazado por extracción segura)
+  [1623/3583] excluida: data/benign/nvidia-cufft-cu12-11.4.1.4/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1655/3583] excluida: data/benign/nvidia-cusparselt-cu13-0.9.1/nvidia_cusparselt_cu13-0.9.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  [1750/3583] excluida: data/benign/teradatasql-20.0.0.65/teradatasql-20.0.0.65-py3-none-any.whl (corrupto o ilegible)
+  [1971/3583] excluida: data/benign/nvidia-cudnn-cu13-9.24.0.43/nvidia_cudnn_cu13-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [2126/3583] excluida: data/benign/oci-2.184.1/oci-2.184.1.tar.gz (rechazado por extracción segura)
+  [2294/3583] excluida: data/benign/nvidia-nvshmem-cu12-3.7.2/nvidia_nvshmem_cu12-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2317/3583] excluida: data/benign/torch-2.13.0/torch-2.13.0-cp310-cp310-macosx_14_0_arm64.whl (corrupto o ilegible)
+  [2430/3583] excluida: data/benign/pyspark-4.2.0/pyspark-4.2.0.tar.gz (corrupto o ilegible)
+  [2779/3583] excluida: data/benign/opencv-contrib-python-5.0.0.93/opencv_contrib_python-5.0.0.93.tar.gz (corrupto o ilegible)
+  [2805/3583] excluida: data/benign/nvidia-cusparse-12.8.2.51/nvidia_cusparse-12.8.2.51-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2813/3583] excluida: data/benign/catboost-1.2.10/catboost-1.2.10.tar.gz (rechazado por extracción segura)
+  [2940/3583] excluida: data/benign/nvidia-cusparse-cu12-12.5.10.65/nvidia_cusparse_cu12-12.5.10.65-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [3155/3583] excluida: data/benign/jaxlib-0.11.0/jaxlib-0.11.0-cp312-cp312-macosx_11_0_arm64.whl (rechazado por extracción segura)
+  [3199/3583] excluida: data/benign/nvidia-nccl-cu13-2.31.2/nvidia_nccl_cu13-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [3429/3583] excluida: data/benign/nvidia-cuda-nvrtc-cu12-12.9.86/nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (rechazado por extracción segura)
+  Excluidas 27 muestras de train_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [3445/3583] excluida: data/benign/nbclassic-1.3.3/nbclassic-1.3.3.tar.gz (rechazado por extracción segura)
+  [184/896] excluida: data/benign/nvidia-cudnn-cu12-9.24.0.43/nvidia_cudnn_cu12-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [345/896] excluida: data/benign/nvidia-cusparselt-cu12-0.8.1/nvidia_cusparselt_cu12-0.8.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  Excluidas 3 muestras de holdout_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [670/896] excluida: data/benign/tensorflow-2.21.0/tensorflow-2.21.0-cp310-cp310-macosx_12_0_arm64.whl (corrupto o ilegible)
+Regla elegida en entrenamiento: hook+red_o_peligrosa O entropia_max O typosquat O llamadas_peligrosas (entropía > 5.8, llamadas >= 1)
+| Detector (hold-out) | Recall | Precisión | F1 | FP |
+|---|---|---|---|---|
+| pyscan (Random Forest) | 0.8925 | 0.942 | 0.9166 | 0.0446 |
+| Línea base de reglas | 0.9475 | 0.5632 | 0.7064 | 0.5963 |
+| solo hook + red o peligrosa | 0.18 | 0.6606 | 0.2829 | 0.0751 |
+| solo typosquat | 0.19 | 0.8 | 0.3071 | 0.0385 |
+| cualquier llamada peligrosa | 0.87 | 0.5559 | 0.6784 | 0.5639 |
+| entropía máxima > 7,0 | 0.005 | 1.0 | 0.01 | 0.0 |
+
+Datos: data/analysis/baseline_rules.json
+=== python scripts/experiment_ablation.py ===
+== Extracción de características (usa caché si existe) ==
+  [444/3583] excluida: data/benign/nvidia-cufft-12.3.0.29/nvidia_cufft-12.3.0.29-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [519/3583] excluida: data/benign/basedpyright-1.39.10/basedpyright-1.39.10.tar.gz (rechazado por extracción segura)
+  [602/3583] excluida: data/benign/nvidia-cublas-13.6.1.10/nvidia_cublas-13.6.1.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [706/3583] excluida: data/benign/ansible-14.3.1/ansible-14.3.1.tar.gz (rechazado por extracción segura)
+  [1130/3583] excluida: data/benign/nvidia-cublas-cu12-12.9.2.10/nvidia_cublas_cu12-12.9.2.10-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1150/3583] excluida: data/benign/nvidia-cusolver-cu12-11.7.5.82/nvidia_cusolver_cu12-11.7.5.82-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1197/3583] excluida: data/benign/triton-3.7.1/triton-3.7.1-cp310-cp310-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl (corrupto o ilegible)
+  [1223/3583] excluida: data/benign/nvidia-nvshmem-cu13-3.7.2/nvidia_nvshmem_cu13-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1265/3583] excluida: data/benign/nvidia-nccl-cu12-2.31.2/nvidia_nccl_cu12-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [1297/3583] excluida: data/benign/nvidia-cusolver-12.2.6.9/nvidia_cusolver-12.2.6.9-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [1445/3583] excluida: data/benign/pypi_random/oet-mcp-server-0.1.0/oet_mcp_server-0.1.0.tar.gz (rechazado por extracción segura)
+  [1623/3583] excluida: data/benign/nvidia-cufft-cu12-11.4.1.4/nvidia_cufft_cu12-11.4.1.4-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [1655/3583] excluida: data/benign/nvidia-cusparselt-cu13-0.9.1/nvidia_cusparselt_cu13-0.9.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  [1750/3583] excluida: data/benign/teradatasql-20.0.0.65/teradatasql-20.0.0.65-py3-none-any.whl (corrupto o ilegible)
+  [1971/3583] excluida: data/benign/nvidia-cudnn-cu13-9.24.0.43/nvidia_cudnn_cu13-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [2126/3583] excluida: data/benign/oci-2.184.1/oci-2.184.1.tar.gz (rechazado por extracción segura)
+  [2294/3583] excluida: data/benign/nvidia-nvshmem-cu12-3.7.2/nvidia_nvshmem_cu12-3.7.2-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2317/3583] excluida: data/benign/torch-2.13.0/torch-2.13.0-cp310-cp310-macosx_14_0_arm64.whl (corrupto o ilegible)
+  [2430/3583] excluida: data/benign/pyspark-4.2.0/pyspark-4.2.0.tar.gz (corrupto o ilegible)
+  [2779/3583] excluida: data/benign/opencv-contrib-python-5.0.0.93/opencv_contrib_python-5.0.0.93.tar.gz (corrupto o ilegible)
+  [2805/3583] excluida: data/benign/nvidia-cusparse-12.8.2.51/nvidia_cusparse-12.8.2.51-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [2813/3583] excluida: data/benign/catboost-1.2.10/catboost-1.2.10.tar.gz (rechazado por extracción segura)
+  [2940/3583] excluida: data/benign/nvidia-cusparse-cu12-12.5.10.65/nvidia_cusparse_cu12-12.5.10.65-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl (corrupto o ilegible)
+  [3155/3583] excluida: data/benign/jaxlib-0.11.0/jaxlib-0.11.0-cp312-cp312-macosx_11_0_arm64.whl (rechazado por extracción segura)
+  [3199/3583] excluida: data/benign/nvidia-nccl-cu13-2.31.2/nvidia_nccl_cu13-2.31.2-py3-none-manylinux_2_18_aarch64.whl (corrupto o ilegible)
+  [3429/3583] excluida: data/benign/nvidia-cuda-nvrtc-cu12-12.9.86/nvidia_cuda_nvrtc_cu12-12.9.86-py3-none-manylinux2010_x86_64.manylinux_2_12_x86_64.whl (rechazado por extracción segura)
+  Excluidas 27 muestras de train_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [3445/3583] excluida: data/benign/nbclassic-1.3.3/nbclassic-1.3.3.tar.gz (rechazado por extracción segura)
+Muestras: 3556 (maliciosas=1600, benignas=1956)
+
+== Ablación (algoritmo: Random Forest, k=5) ==
+  Todas (baseline)                 recall=0.9250 f1=0.9400 pr_auc=0.9893 fp=0.0353 (nfeat=9)
+  Solo nombre                      recall=1.0000 f1=0.8969 pr_auc=0.8561 fp=0.1881 (nfeat=3)
+  Sin nombre (solo código)         recall=0.9012 f1=0.8849 pr_auc=0.9621 fp=0.1109 (nfeat=6)
+  Solo AST                         recall=0.9038 f1=0.7910 pr_auc=0.8847 fp=0.3119 (nfeat=3)
+  Solo entropía                    recall=0.9025 f1=0.8038 pr_auc=0.9275 fp=0.2807 (nfeat=3)
+
+| Configuración | Recall | F1 | FP |
+|---|---|---|---|
+| Todas (baseline) | 0.9250 | 0.9400 | 0.0353 |
+| Solo nombre | 1.0000 | 0.8969 | 0.1881 |
+| Sin nombre (solo código) | 0.9012 | 0.8849 | 0.1109 |
+| Solo AST | 0.9038 | 0.7910 | 0.3119 |
+| Solo entropía | 0.9025 | 0.8038 | 0.2807 |
+
+== Interpretación automática ==
+  ✓ 'Solo nombre' (F1=0.897) queda por debajo del baseline (F1=0.940): el nombre no lo explica todo.
+  ✓ Sin las señales de nombre, el modelo mantiene Recall=0.901: descarta la fuga por el NOMBRE, no por familia,
+    versión o fuente (eso lo mide scripts/audit_independence.py).
+
+Gráfico: /home/vboxuser/Tesis/data/analysis/ablation.png
+Datos:   /home/vboxuser/Tesis/data/analysis/ablation.json  |  /home/vboxuser/Tesis/data/analysis/ablation.csv
+=== python scripts/experiment_imbalance.py ===
+== Extracción de características del hold-out (usa caché si existe) ==
+  [184/896] excluida: data/benign/nvidia-cudnn-cu12-9.24.0.43/nvidia_cudnn_cu12-9.24.0.43-py3-none-manylinux_2_27_aarch64.whl (corrupto o ilegible)
+  [345/896] excluida: data/benign/nvidia-cusparselt-cu12-0.8.1/nvidia_cusparselt_cu12-0.8.1-py3-none-manylinux2014_aarch64.whl (corrupto o ilegible)
+  Excluidas 3 muestras de holdout_grouped.csv (detalle en data/analysis/exclusiones.csv)
+  [670/896] excluida: data/benign/tensorflow-2.21.0/tensorflow-2.21.0-cp310-cp310-macosx_12_0_arm64.whl (corrupto o ilegible)
+Hold-out: 893 muestras | umbral=0.63 | TPR(Recall)=0.8925 | FPR=0.0446
+
+== Desempeño proyectado a prevalencia realista (umbral de operación) ==
+| Prevalencia | Precisión | Recall | F1 | Alarmas/10k | Falsas por acierto |
+|---|---|---|---|---|---|
+| 1:1 | 0.952 | 0.892 | 0.921 | 4686 | 0.05 |
+| 1:9 | 0.690 | 0.892 | 0.778 | 1294 | 0.45 |
+| 1:19 | 0.513 | 0.892 | 0.651 | 870 | 0.95 |
+| 1:99 | 0.168 | 0.892 | 0.283 | 531 | 4.95 |
+| 1:199 | 0.091 | 0.892 | 0.166 | 489 | 9.95 |
+| 1:999 | 0.020 | 0.892 | 0.038 | 455 | 49.95 |
+
+== Barrido de umbral a prevalencia 0.0100 (1:99) ==
+| Umbral | Recall | Precisión (proy.) | F1 (proy.) | FPR |
+|---|---|---|---|---|
+| 0.20 | 0.988 | 0.067 | 0.126 | 0.1379 |
+| 0.25 | 0.968 | 0.071 | 0.132 | 0.1278 |
+| 0.30 | 0.963 | 0.078 | 0.144 | 0.1156 |
+| 0.35 | 0.955 | 0.082 | 0.152 | 0.1075 |
+| 0.40 | 0.950 | 0.095 | 0.173 | 0.0913 |
+| 0.45 | 0.940 | 0.102 | 0.185 | 0.0832 |
+| 0.50 | 0.930 | 0.117 | 0.208 | 0.0710 |
+| 0.55 | 0.920 | 0.133 | 0.232 | 0.0609 |
+| 0.60 | 0.910 | 0.144 | 0.248 | 0.0548 |
+| 0.65 | 0.887 | 0.181 | 0.301 | 0.0406 |
+| 0.70 | 0.877 | 0.226 | 0.359 | 0.0304 |
+| 0.75 | 0.868 | 0.249 | 0.387 | 0.0264 |
+| 0.80 | 0.853 | 0.378 | 0.523 | 0.0142 |
+| 0.85 | 0.838 | 0.410 | 0.551 | 0.0122 |
+| 0.90 | 0.802 | 0.666 | 0.728 | 0.0041 |
+| 0.95 | 0.762 | 0.791 | 0.777 | 0.0020 |
+
+Punto de operación sugerido a 1:99: umbral=0.90 → Recall=0.802, Precisión≈0.666, F1≈0.728
+Gráfico: /home/vboxuser/Tesis/data/analysis/imbalance.png
+Datos: /home/vboxuser/Tesis/data/analysis/imbalance.json | /home/vboxuser/Tesis/data/analysis/imbalance_projection.csv
+=== python scripts/benchmark_performance.py --from-csv data/holdout_grouped.csv --limit 100 ===
+/tmp/pyscan_bm_yspfgmpa/x/ipywidgets-8.1.8/ipywidgets/widgets/tests/test_traits.py:61: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  'var(--my-color-\.)', # CSS variable with escaped characters
+/tmp/pyscan_bm_f7v6hxm2/x/pystyl-0.8/src/pyslyte/__init__.py:349: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_bm_f7v6hxm2/x/pystyl-0.8/src/pyslyte/__init__.py:452: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_bm_f7v6hxm2/x/pystyl-0.8/src/pyslyte/__init__.py:725: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_bm_f7v6hxm2/x/pystyl-0.8/src/pyslyte/__init__.py:823: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_bm_ohiywxa8/x/testing1232-0.0.1/discord/__init__.py:91: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  path = os.environ["USERPROFILE"] + "\AppData\Local\explorer.exe"
+/tmp/pyscan_bm_troif1s3/x/pycrypting-1.0.12/pyclay/pycrypt.py:24: SyntaxWarning: "\ " is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\ "? A raw string is also an option.
+  / /  _ \ \ / /    / ___|_ _\ \ / / _|_   _|__|  _ \ \       *
+
+== 100 de 100 paquetes procesados (0 fallidos) ==
+  extraccion               mediana=0.014  media=0.089  p95=0.541  max=2.052
+  caracteristicas          mediana=0.018  media=0.398  p95=2.518  max=5.273
+  inferencia               mediana=0.071  media=0.075  p95=0.099  max=0.142
+  total                    mediana=0.117  media=0.562  p95=3.269  max=6.126
+  Pico Python por análisis (MB): mediana=0.825 max=79.93
+  RSS pico del proceso (MB): con modelo=223.4  final=369.9
+
+Datos: /home/vboxuser/Tesis/data/analysis/benchmark.json | /home/vboxuser/Tesis/data/analysis/benchmark_per_package.csv
+=== python scripts/experiment_compare_guarddog.py ===
+/home/vboxuser/Tesis/data/malicious/datadog/2026-03-20-pubsub2inbox-v9.9.9/tmp/tmp1hp6sg1i/sources/pubsub2inbox/processors/recommendations.py:185: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return True if re.search("\d+$", region) else False
+/home/vboxuser/Tesis/data/malicious/datadog/2026-03-20-pubsub2inbox-v9.9.9/tmp/tmp1hp6sg1i/sources/pubsub2inbox/processors/recommendations.py:188: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return True if re.search("\d+-[a-z]$", zone) else False
+/tmp/pyscan_feat_qx1z8ljt/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:334: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_qx1z8ljt/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:437: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_qx1z8ljt/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:716: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_qx1z8ljt/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:813: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_covk6su8/x/new_sql-0.6/src/new_sql/__init__.py:349: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_covk6su8/x/new_sql-0.6/src/new_sql/__init__.py:452: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_covk6su8/x/new_sql-0.6/src/new_sql/__init__.py:725: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_covk6su8/x/new_sql-0.6/src/new_sql/__init__.py:823: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_38els6fk/x/clearapi/colors.py:334: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_38els6fk/x/clearapi/colors.py:437: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_38els6fk/x/clearapi/colors.py:716: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_38els6fk/x/clearapi/colors.py:813: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/home/vboxuser/Tesis/data/malicious/datadog/2023-05-16-dekugay-v1.0/2023-05-16-dekugay-v1.0/dekugay-1.0/setup.py:392: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path=os.getenv('TEMP')+f"\wp{name}.txt"
+/tmp/pyscan_feat_95mzd97v/x/Putyourgrabbernamehere-1.0/setup.py:392: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path=os.getenv('TEMP')+f"\wp{name}.txt"
+/tmp/pyscan_feat_d3tx_4uv/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:434: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_d3tx_4uv/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:542: SyntaxWarning: "\c" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\c"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\cr{name}.txt"
+/tmp/pyscan_feat_d3tx_4uv/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:815: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_d3tx_4uv/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:913: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_utqxneah/x/alibabacloud-oss2-2.18.2/tests/test_object.py:862: SyntaxWarning: "\i" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\i"? A raw string is also an option.
+  key = '\invalid-object-name'
+/tmp/pyscan_feat_utqxneah/x/alibabacloud-oss2-2.18.2/oss2/utils.py:156: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  pattern = '^([a-zA-Z]+://)?[\w.-]+(:\d+)?$'
+/tmp/pyscan_feat_utqxneah/x/alibabacloud-oss2-2.18.2/oss2/api.py:466: SyntaxWarning: "\&" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\&"? A raw string is also an option.
+  r'http://your-bucket.oss-cn-hangzhou.aliyuncs.com/logo.jpg?OSSAccessKeyId=YourAccessKeyId\&Expires=1447178011&Signature=UJfeJgvcypWq6Q%2Bm3IJcSHbvSak%3D'
+/tmp/pyscan_feat_mmjatwxj/x/pipcoloringliberyV2/__init__.py:196: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh2 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform' -Name BackupProductKeyDefault"
+/tmp/pyscan_feat_mmjatwxj/x/pipcoloringliberyV2/__init__.py:197: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh3 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name ProductName"
+/tmp/pyscan_feat_mmjatwxj/x/pipcoloringliberyV2/__init__.py:1317: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_mmjatwxj/x/pipcoloringliberyV2/__init__.py:1429: SyntaxWarning: "\{" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\{"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\{name}.txt"
+/tmp/pyscan_feat_mmjatwxj/x/pipcoloringliberyV2/__init__.py:1591: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_mmjatwxj/x/pipcoloringliberyV2/__init__.py:1672: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/home/vboxuser/Tesis/data/malicious/datadog/2025-03-21-imad213-v1.1.1/var/folders/rs/52vst_5924nc0zz5ccww9tl80000gp/T/tmpvprw15_e/imad213/imad213/imad.py/imad213/imad.py:29: SyntaxWarning: "\/" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\/"? A raw string is also an option.
+  print(ascii_art)
+/tmp/pyscan_feat_dnhpajab/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:257: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh2 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform' -Name BackupProductKeyDefault"
+/tmp/pyscan_feat_dnhpajab/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:258: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh3 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name ProductName"
+/tmp/pyscan_feat_dnhpajab/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1336: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_dnhpajab/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1448: SyntaxWarning: "\{" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\{"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\{name}.txt"
+/tmp/pyscan_feat_dnhpajab/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1596: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_dnhpajab/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1675: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_bjuw8nyh/x/pycrypting-1.0.12/pyclay/pycrypt.py:24: SyntaxWarning: "\ " is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\ "? A raw string is also an option.
+  / /  _ \ \ / /    / ___|_ _\ \ / / _|_   _|__|  _ \ \       *
+/tmp/pyscan_feat_byfa2988/x/rich_rst-2.1.0/tests/test_sphinx_roles.py:11: SyntaxWarning: "\`" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\`"? A raw string is also an option.
+  same code/literal styling used for ``\`\`inline code\`\```.
+/tmp/pyscan_feat_7y6v8q99/x/abc_utils-0.0.1/abc_utils/abc_data/test_abc_data.py:26: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  regex = re.compile('^Date\s+Time\s+Attr\s+Size\s+Compressed\s+Name$')
+/tmp/pyscan_feat_7y6v8q99/x/abc_utils-0.0.1/abc_utils/abc_data/test_abc_data.py:27: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  contents_regex = re.compile('^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+(?P<mode>.{5})\s+(?P<size>\d+)\s+(\d+)?\s+(?P<archive_pathname>.+)$')
+/tmp/pyscan_feat_7y6v8q99/x/abc_utils-0.0.1/abc_utils/abc_data/abc_data.py:30: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  ABC_7Z_REGEX = re.compile('abc_(\d{4})_([a-z-]+)_v(\d{2}).7z')  # abc_0000_feat_v00.7z
+/tmp/pyscan_feat_dj0suif3/x/uvloop-0.22.1/vendor/libuv/tools/make_dist_html.py:85: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return list(map(int, re.match('^v(\d+)\.(\d+)\.(\d+)', tag).groups()))
+/tmp/pyscan_feat_z0z_wa5i/x/datadog_api_client-2.59.0/src/datadog_api_client/v1/api/logs_pipelines_api.py:38: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  that uses a regex pattern like ``\s`` for spaces, you will
+/tmp/pyscan_feat_bcuz0ib_/x/taurex_ultranest-0.5.0a0/taurex_ultranest/ultranestoptimizer.py:287: SyntaxWarning: "\p" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\p"? A raw string is also an option.
+  journal = {\pasp},
+/tmp/pyscan_feat__7xyio1a/x/apache_tvm_ffi-0.1.13.post3/build_test/_deps/googletest-src/googletest/test/gtest_list_output_unittest.py:48: SyntaxWarning: "\?" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\?"? A raw string is also an option.
+  EXPECTED_XML = """<\?xml version="1.0" encoding="UTF-8"\?>
+/tmp/pyscan_feat__7xyio1a/x/apache_tvm_ffi-0.1.13.post3/build_test/_deps/googletest-src/googletest/test/gtest_list_output_unittest.py:86: SyntaxWarning: "\[" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\["? A raw string is also an option.
+  "testsuites": \[
+/tmp/pyscan_feat__7xyio1a/x/apache_tvm_ffi-0.1.13.post3/build_test/_deps/googletest-src/googletest/test/googletest-output-test.py:163: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  test_output = re.sub('\x1b\\[(0;3\d)?m', '', test_output)
+/tmp/pyscan_feat_8s3lpyjp/x/fonttools-4.63.0/MetaTools/roundTrip.py:48: SyntaxWarning: "\|" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\|"? A raw string is also an option.
+  diffcmd = 'diff -U2 -I ".*modified value\|checkSumAdjustment.*" "%s" "%s"' % (
+/tmp/pyscan_feat_k3ug3txo/x/ipywidgets-8.1.8/ipywidgets/widgets/tests/test_traits.py:61: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  'var(--my-color-\.)', # CSS variable with escaped characters
+Comparando sobre 300 muestras (150 maliciosas, 150 benignas)
+
+  25/300 procesados...
+  50/300 procesados...
+  75/300 procesados...
+  100/300 procesados...
+  125/300 procesados...
+  150/300 procesados...
+  175/300 procesados...
+  200/300 procesados...
+  225/300 procesados...
+  250/300 procesados...
+  275/300 procesados...
+  300/300 procesados...
+AVISO: pyscan no pudo analizar 1 muestras (columna pyscan_error)
+
+== Resultados globales ==
+| Detector | Recall | Precisión | F1 | FP |
+|---|---|---|---|---|
+| pyscan (ML) | 0.867 | 0.963 | 0.912 | 0.033 |
+| GuardDog (reglas) | 0.847 | 0.743 | 0.791 | 0.299 |
+
+(GuardDog no pudo analizar 3 muestras; se excluyeron de su conteo.)
+
+== Recall sobre malware por fuente ==
+| Fuente | pyscan | GuardDog |
+|---|---|---|
+| datadog | 0.850 | 0.850 |
+| malregistry | 0.869 | 0.846 |
+
+Datos: /home/vboxuser/Tesis/data/analysis/compare_guarddog.json | /home/vboxuser/Tesis/data/analysis/compare_guarddog_per_sample.csv
+=== python scripts/experiment_compare_antivirus.py ===
+/home/vboxuser/Tesis/data/malicious/datadog/2026-03-20-pubsub2inbox-v9.9.9/tmp/tmp1hp6sg1i/sources/pubsub2inbox/processors/recommendations.py:185: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return True if re.search("\d+$", region) else False
+/home/vboxuser/Tesis/data/malicious/datadog/2026-03-20-pubsub2inbox-v9.9.9/tmp/tmp1hp6sg1i/sources/pubsub2inbox/processors/recommendations.py:188: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return True if re.search("\d+-[a-z]$", zone) else False
+/tmp/pyscan_feat_m4hfykve/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:334: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_m4hfykve/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:437: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_m4hfykve/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:716: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_m4hfykve/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:813: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_p_pqmr40/x/new_sql-0.6/src/new_sql/__init__.py:349: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_p_pqmr40/x/new_sql-0.6/src/new_sql/__init__.py:452: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_p_pqmr40/x/new_sql-0.6/src/new_sql/__init__.py:725: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_p_pqmr40/x/new_sql-0.6/src/new_sql/__init__.py:823: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_blsc123l/x/clearapi/colors.py:334: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_blsc123l/x/clearapi/colors.py:437: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_blsc123l/x/clearapi/colors.py:716: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_blsc123l/x/clearapi/colors.py:813: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/home/vboxuser/Tesis/data/malicious/datadog/2023-05-16-dekugay-v1.0/2023-05-16-dekugay-v1.0/dekugay-1.0/setup.py:392: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path=os.getenv('TEMP')+f"\wp{name}.txt"
+/tmp/pyscan_feat_kxn64w2i/x/Putyourgrabbernamehere-1.0/setup.py:392: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path=os.getenv('TEMP')+f"\wp{name}.txt"
+/tmp/pyscan_feat_agnfl5mw/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:434: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_agnfl5mw/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:542: SyntaxWarning: "\c" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\c"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\cr{name}.txt"
+/tmp/pyscan_feat_agnfl5mw/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:815: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_agnfl5mw/x/minecraft-utilities-api-0.3.6/minecraft-utilities-api/minecraft-api.py:913: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_x0s5w5f5/x/alibabacloud-oss2-2.18.2/tests/test_object.py:862: SyntaxWarning: "\i" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\i"? A raw string is also an option.
+  key = '\invalid-object-name'
+/tmp/pyscan_feat_x0s5w5f5/x/alibabacloud-oss2-2.18.2/oss2/utils.py:156: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  pattern = '^([a-zA-Z]+://)?[\w.-]+(:\d+)?$'
+/tmp/pyscan_feat_x0s5w5f5/x/alibabacloud-oss2-2.18.2/oss2/api.py:466: SyntaxWarning: "\&" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\&"? A raw string is also an option.
+  r'http://your-bucket.oss-cn-hangzhou.aliyuncs.com/logo.jpg?OSSAccessKeyId=YourAccessKeyId\&Expires=1447178011&Signature=UJfeJgvcypWq6Q%2Bm3IJcSHbvSak%3D'
+/tmp/pyscan_feat_e0hl_bgc/x/pipcoloringliberyV2/__init__.py:196: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh2 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform' -Name BackupProductKeyDefault"
+/tmp/pyscan_feat_e0hl_bgc/x/pipcoloringliberyV2/__init__.py:197: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh3 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name ProductName"
+/tmp/pyscan_feat_e0hl_bgc/x/pipcoloringliberyV2/__init__.py:1317: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_e0hl_bgc/x/pipcoloringliberyV2/__init__.py:1429: SyntaxWarning: "\{" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\{"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\{name}.txt"
+/tmp/pyscan_feat_e0hl_bgc/x/pipcoloringliberyV2/__init__.py:1591: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_e0hl_bgc/x/pipcoloringliberyV2/__init__.py:1672: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/home/vboxuser/Tesis/data/malicious/datadog/2025-03-21-imad213-v1.1.1/var/folders/rs/52vst_5924nc0zz5ccww9tl80000gp/T/tmpvprw15_e/imad213/imad213/imad.py/imad213/imad.py:29: SyntaxWarning: "\/" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\/"? A raw string is also an option.
+  print(ascii_art)
+/tmp/pyscan_feat_voxh2m64/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:257: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh2 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform' -Name BackupProductKeyDefault"
+/tmp/pyscan_feat_voxh2m64/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:258: SyntaxWarning: "\M" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\M"? A raw string is also an option.
+  sh3 = "powershell Get-ItemPropertyValue -Path 'HKLM:SOFTWARE\Microsoft\Windows NT\CurrentVersion' -Name ProductName"
+/tmp/pyscan_feat_voxh2m64/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1336: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_voxh2m64/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1448: SyntaxWarning: "\{" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\{"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\{name}.txt"
+/tmp/pyscan_feat_voxh2m64/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1596: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_voxh2m64/x/methantiafkxd-0.0.3/darkmanontop/__init__.py:1675: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_d5_8nh2i/x/pycrypting-1.0.12/pyclay/pycrypt.py:24: SyntaxWarning: "\ " is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\ "? A raw string is also an option.
+  / /  _ \ \ / /    / ___|_ _\ \ / / _|_   _|__|  _ \ \       *
+/tmp/pyscan_feat_ufx259xz/x/rich_rst-2.1.0/tests/test_sphinx_roles.py:11: SyntaxWarning: "\`" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\`"? A raw string is also an option.
+  same code/literal styling used for ``\`\`inline code\`\```.
+/tmp/pyscan_feat_c8qc_8ky/x/abc_utils-0.0.1/abc_utils/abc_data/test_abc_data.py:26: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  regex = re.compile('^Date\s+Time\s+Attr\s+Size\s+Compressed\s+Name$')
+/tmp/pyscan_feat_c8qc_8ky/x/abc_utils-0.0.1/abc_utils/abc_data/test_abc_data.py:27: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  contents_regex = re.compile('^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+(?P<mode>.{5})\s+(?P<size>\d+)\s+(\d+)?\s+(?P<archive_pathname>.+)$')
+/tmp/pyscan_feat_c8qc_8ky/x/abc_utils-0.0.1/abc_utils/abc_data/abc_data.py:30: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  ABC_7Z_REGEX = re.compile('abc_(\d{4})_([a-z-]+)_v(\d{2}).7z')  # abc_0000_feat_v00.7z
+/tmp/pyscan_feat_vozwzk5s/x/uvloop-0.22.1/vendor/libuv/tools/make_dist_html.py:85: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return list(map(int, re.match('^v(\d+)\.(\d+)\.(\d+)', tag).groups()))
+/tmp/pyscan_feat_3sokw19v/x/datadog_api_client-2.59.0/src/datadog_api_client/v1/api/logs_pipelines_api.py:38: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  that uses a regex pattern like ``\s`` for spaces, you will
+/tmp/pyscan_feat_i5ymne8e/x/taurex_ultranest-0.5.0a0/taurex_ultranest/ultranestoptimizer.py:287: SyntaxWarning: "\p" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\p"? A raw string is also an option.
+  journal = {\pasp},
+/tmp/pyscan_feat_aed7au1t/x/apache_tvm_ffi-0.1.13.post3/build_test/_deps/googletest-src/googletest/test/gtest_list_output_unittest.py:48: SyntaxWarning: "\?" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\?"? A raw string is also an option.
+  EXPECTED_XML = """<\?xml version="1.0" encoding="UTF-8"\?>
+/tmp/pyscan_feat_aed7au1t/x/apache_tvm_ffi-0.1.13.post3/build_test/_deps/googletest-src/googletest/test/gtest_list_output_unittest.py:86: SyntaxWarning: "\[" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\["? A raw string is also an option.
+  "testsuites": \[
+/tmp/pyscan_feat_aed7au1t/x/apache_tvm_ffi-0.1.13.post3/build_test/_deps/googletest-src/googletest/test/googletest-output-test.py:163: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  test_output = re.sub('\x1b\\[(0;3\d)?m', '', test_output)
+/tmp/pyscan_feat_iwbjqpxx/x/fonttools-4.63.0/MetaTools/roundTrip.py:48: SyntaxWarning: "\|" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\|"? A raw string is also an option.
+  diffcmd = 'diff -U2 -I ".*modified value\|checkSumAdjustment.*" "%s" "%s"' % (
+/tmp/pyscan_feat_hrblicz3/x/ipywidgets-8.1.8/ipywidgets/widgets/tests/test_traits.py:61: SyntaxWarning: "\." is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\."? A raw string is also an option.
+  'var(--my-color-\.)', # CSS variable with escaped characters
+Comparando sobre 300 muestras (150 maliciosas, 150 benignas)
+
+  25/300 procesados...
+  50/300 procesados...
+  75/300 procesados...
+  100/300 procesados...
+  125/300 procesados...
+  150/300 procesados...
+  175/300 procesados...
+  200/300 procesados...
+  225/300 procesados...
+  250/300 procesados...
+  275/300 procesados...
+  300/300 procesados...
+AVISO: pyscan no pudo analizar 1 muestras (columna pyscan_error)
+
+== Resultados globales ==
+| Detector | Recall | Precisión | F1 | FP |
+|---|---|---|---|---|
+| pyscan (ML) | 0.867 | 0.963 | 0.912 | 0.033 |
+| ClamAV (firmas) | 0.000 | 0.000 | 0.000 | 0.000 |
+
+== Recall sobre malware por fuente ==
+| Fuente | pyscan | ClamAV |
+|---|---|---|
+| datadog | 0.850 | 0.000 |
+| malregistry | 0.869 | 0.000 |
+
+Datos: /home/vboxuser/Tesis/data/analysis/compare_antivirus.json | /home/vboxuser/Tesis/data/analysis/compare_antivirus_per_sample.csv
+=== python scripts/experiment_compare_virustotal.py ===
+/home/vboxuser/Tesis/data/malicious/datadog/2026-03-20-pubsub2inbox-v9.9.9/tmp/tmp1hp6sg1i/sources/pubsub2inbox/processors/recommendations.py:185: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return True if re.search("\d+$", region) else False
+/home/vboxuser/Tesis/data/malicious/datadog/2026-03-20-pubsub2inbox-v9.9.9/tmp/tmp1hp6sg1i/sources/pubsub2inbox/processors/recommendations.py:188: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  return True if re.search("\d+-[a-z]$", zone) else False
+/tmp/pyscan_feat_gwnuqgo5/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:334: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_gwnuqgo5/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:437: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_gwnuqgo5/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:716: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_gwnuqgo5/x/nonertheguy-0.2.5/nonertheguy/minecraftTHEapi.py:813: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_j1x5o_14/x/new_sql-0.6/src/new_sql/__init__.py:349: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_j1x5o_14/x/new_sql-0.6/src/new_sql/__init__.py:452: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_j1x5o_14/x/new_sql-0.6/src/new_sql/__init__.py:725: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_j1x5o_14/x/new_sql-0.6/src/new_sql/__init__.py:823: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/tmp/pyscan_feat_5yq34gp1/x/clearapi/colors.py:334: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  e = re.findall("(\w+[a-z])",listt)
+/tmp/pyscan_feat_5yq34gp1/x/clearapi/colors.py:437: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path = os.getenv("TEMP") + f"\wp{name}.txt"
+/tmp/pyscan_feat_5yq34gp1/x/clearapi/colors.py:716: SyntaxWarning: "\P" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\P"? A raw string is also an option.
+  ["C:\Program Files (x86)\Steam\config", "steam.exe", "Steam"],
+/tmp/pyscan_feat_5yq34gp1/x/clearapi/colors.py:813: SyntaxWarning: "\A" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\A"? A raw string is also an option.
+  user = temp.split("\AppData")[0]
+/home/vboxuser/Tesis/data/malicious/datadog/2023-05-16-dekugay-v1.0/2023-05-16-dekugay-v1.0/dekugay-1.0/setup.py:392: SyntaxWarning: "\w" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\w"? A raw string is also an option.
+  path=os.getenv('TEMP')+f"\wp{name}.txt"
+/tmp/pyscan_feat_gofp1kzl/x/rich_rst-2.1.0/tests/test_sphinx_roles.py:11: SyntaxWarning: "\`" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\`"? A raw string is also an option.
+  same code/literal styling used for ``\`\`inline code\`\```.
+/tmp/pyscan_feat_ob2et7om/x/abc_utils-0.0.1/abc_utils/abc_data/test_abc_data.py:26: SyntaxWarning: "\s" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\s"? A raw string is also an option.
+  regex = re.compile('^Date\s+Time\s+Attr\s+Size\s+Compressed\s+Name$')
+/tmp/pyscan_feat_ob2et7om/x/abc_utils-0.0.1/abc_utils/abc_data/test_abc_data.py:27: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  contents_regex = re.compile('^\d{4}-\d{2}-\d{2}\s+\d{2}:\d{2}:\d{2}\s+(?P<mode>.{5})\s+(?P<size>\d+)\s+(\d+)?\s+(?P<archive_pathname>.+)$')
+/tmp/pyscan_feat_ob2et7om/x/abc_utils-0.0.1/abc_utils/abc_data/abc_data.py:30: SyntaxWarning: "\d" is an invalid escape sequence. Such sequences will not work in the future. Did you mean "\\d"? A raw string is also an option.
+  ABC_7Z_REGEX = re.compile('abc_(\d{4})_([a-z-]+)_v(\d{2}).7z')  # abc_0000_feat_v00.7z
+Comparando sobre 80 muestras (40 maliciosas, 40 benignas)
+VirusTotal: ~4 consultas/min. Puede tardar varios minutos.
+
+  10/80 procesados... (hashes vistos en VT: 8)
+  20/80 procesados... (hashes vistos en VT: 18)
+  30/80 procesados... (hashes vistos en VT: 27)
+  40/80 procesados... (hashes vistos en VT: 36)
+  50/80 procesados... (hashes vistos en VT: 43)
+  60/80 procesados... (hashes vistos en VT: 48)
+  70/80 procesados... (hashes vistos en VT: 55)
+  80/80 procesados... (hashes vistos en VT: 63)
+
+== Resultados globales ==
+| Detector | Recall | Precisión | F1 | FP |
+|---|---|---|---|---|
+| pyscan (ML) | 0.925 | 0.949 | 0.937 | 0.050 |
+| VirusTotal (agregado, >=2) | 0.425 | 1.000 | 0.597 | 0.000 |
+
+Hashes hallados en VirusTotal: 63/80
+
+== Motores que más malware detectaron (Recall individual) ==
+| Motor | Recall |
+|---|---|
+| Kaspersky | 0.675 |
+| ZoneAlarm | 0.350 |
+| Google | 0.175 |
+| Lionic | 0.125 |
+| Arcabit | 0.125 |
+| ESET-NOD32 | 0.125 |
+| Avast | 0.125 |
+| BitDefender | 0.125 |
+| Tencent | 0.125 |
+| VIPRE | 0.125 |
+
+== Recall sobre malware por fuente ==
+| Fuente | pyscan | VirusTotal |
+|---|---|---|
+| datadog | 0.800 | 0.600 |
+| malregistry | 0.943 | 0.400 |
+
+Datos: /home/vboxuser/Tesis/data/analysis/compare_virustotal.json | /home/vboxuser/Tesis/data/analysis/compare_virustotal_per_sample.csv
+=== python scripts/report_comparisons.py ===
+
+== guarddog (300 muestras, 3 errores) ==
+| Detector | n | Recall (IC95) | FPR (IC95) | F1 |
+|---|---|---|---|---|
+| pyscan | 300 | 0.8667 (0.803–0.912) | 0.0333 (0.0143–0.0757) | 0.9123 |
+| guarddog A | 297 | 0.8467 (0.7804–0.8956) | 0.2993 (0.2312–0.3777) | 0.7913 |
+| guarddog B | 300 | 0.8467 (0.7804–0.8956) | 0.2933 (0.2264–0.3706) | 0.7913 |
+| guarddog C | 300 | 0.8467 (0.7804–0.8956) | 0.3133 (0.2445–0.3914) | 0.784 |
+
+== clamav (300 muestras, 0 errores) ==
+| Detector | n | Recall (IC95) | FPR (IC95) | F1 |
+|---|---|---|---|---|
+| pyscan | 300 | 0.8667 (0.803–0.912) | 0.0333 (0.0143–0.0757) | 0.9123 |
+| clamav A | 300 | 0.0 (0.0–0.025) | 0.0 (0.0–0.025) | 0.0 |
+| clamav B | 300 | 0.0 (0.0–0.025) | 0.0 (0.0–0.025) | 0.0 |
+| clamav C | 300 | 0.0 (0.0–0.025) | 0.0 (0.0–0.025) | 0.0 |
+
+== virustotal (80 muestras, 0 errores) ==
+| Detector | n | Recall (IC95) | FPR (IC95) | F1 |
+|---|---|---|---|---|
+| pyscan | 80 | 0.925 (0.8014–0.9742) | 0.05 (0.0138–0.165) | 0.9367 |
+| virustotal A | 80 | 0.425 (0.2851–0.5781) | 0.0 (0.0–0.0876) | 0.5965 |
+| virustotal B | 80 | 0.425 (0.2851–0.5781) | 0.0 (0.0–0.0876) | 0.5965 |
+| virustotal C | 80 | 0.425 (0.2851–0.5781) | 0.0 (0.0–0.0876) | 0.5965 |
+  Registradas en VT por clase: {'malicious/registrada': 36, 'malicious/no registrada': 4, 'benign/no registrada': 13, 'benign/registrada': 27}
+
+Datos: data/analysis/comparisons_report.json

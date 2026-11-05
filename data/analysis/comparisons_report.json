@@ -1,0 +1,590 @@
+{
+  "guarddog": {
+    "muestras": 300,
+    "por_clase_y_fuente": {
+      "malicious/malregistry": 130,
+      "malicious/datadog": 20,
+      "benign/top": 115,
+      "benign/aleatoria": 35
+    },
+    "errores_herramienta": 3,
+    "errores_por_clase": {
+      "benign": 3
+    },
+    "ejecucion": {
+      "fecha": "2026-11-05T19:19:45.972250+00:00",
+      "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+      "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+      "manifiesto_holdout": "data/holdout_grouped.csv",
+      "versiones": {
+        "python": "3.14.4",
+        "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+        "sklearn": "1.9.0",
+        "imblearn": "0.14.2",
+        "xgboost": "3.4.1",
+        "numpy": "2.5.2",
+        "pandas": "3.0.5",
+        "joblib": "1.5.3",
+        "rapidfuzz": "3.14.5"
+      },
+      "guarddog_version": "3.2.0",
+      "politica_errores": "excluidos del conteo de GuardDog; ver report_comparisons.py para la política común"
+    },
+    "pyscan": {
+      "n": 300,
+      "vp": 130,
+      "fp": 5,
+      "vn": 145,
+      "fn": 20,
+      "recall": {
+        "k": 130,
+        "n": 150,
+        "valor": 0.8667,
+        "ic95": [
+          0.803,
+          0.912
+        ]
+      },
+      "fpr": {
+        "k": 5,
+        "n": 150,
+        "valor": 0.0333,
+        "ic95": [
+          0.0143,
+          0.0757
+        ]
+      },
+      "precision": {
+        "k": 130,
+        "n": 135,
+        "valor": 0.963,
+        "ic95": [
+          0.9162,
+          0.9841
+        ]
+      },
+      "f1": 0.9123
+    },
+    "guarddog_politica_A": {
+      "n": 297,
+      "vp": 127,
+      "fp": 44,
+      "vn": 103,
+      "fn": 23,
+      "recall": {
+        "k": 127,
+        "n": 150,
+        "valor": 0.8467,
+        "ic95": [
+          0.7804,
+          0.8956
+        ]
+      },
+      "fpr": {
+        "k": 44,
+        "n": 147,
+        "valor": 0.2993,
+        "ic95": [
+          0.2312,
+          0.3777
+        ]
+      },
+      "precision": {
+        "k": 127,
+        "n": 171,
+        "valor": 0.7427,
+        "ic95": [
+          0.6723,
+          0.8024
+        ]
+      },
+      "f1": 0.7913
+    },
+    "guarddog_politica_B": {
+      "n": 300,
+      "vp": 127,
+      "fp": 44,
+      "vn": 106,
+      "fn": 23,
+      "recall": {
+        "k": 127,
+        "n": 150,
+        "valor": 0.8467,
+        "ic95": [
+          0.7804,
+          0.8956
+        ]
+      },
+      "fpr": {
+        "k": 44,
+        "n": 150,
+        "valor": 0.2933,
+        "ic95": [
+          0.2264,
+          0.3706
+        ]
+      },
+      "precision": {
+        "k": 127,
+        "n": 171,
+        "valor": 0.7427,
+        "ic95": [
+          0.6723,
+          0.8024
+        ]
+      },
+      "f1": 0.7913
+    },
+    "guarddog_politica_C": {
+      "n": 300,
+      "vp": 127,
+      "fp": 47,
+      "vn": 103,
+      "fn": 23,
+      "recall": {
+        "k": 127,
+        "n": 150,
+        "valor": 0.8467,
+        "ic95": [
+          0.7804,
+          0.8956
+        ]
+      },
+      "fpr": {
+        "k": 47,
+        "n": 150,
+        "valor": 0.3133,
+        "ic95": [
+          0.2445,
+          0.3914
+        ]
+      },
+      "precision": {
+        "k": 127,
+        "n": 174,
+        "valor": 0.7299,
+        "ic95": [
+          0.6595,
+          0.7904
+        ]
+      },
+      "f1": 0.784
+    }
+  },
+  "clamav": {
+    "muestras": 300,
+    "por_clase_y_fuente": {
+      "malicious/malregistry": 130,
+      "malicious/datadog": 20,
+      "benign/top": 115,
+      "benign/aleatoria": 35
+    },
+    "errores_herramienta": 0,
+    "errores_por_clase": {},
+    "ejecucion": {
+      "fecha": "2026-11-05T20:05:15.561687+00:00",
+      "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+      "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+      "manifiesto_holdout": "data/holdout_grouped.csv",
+      "versiones": {
+        "python": "3.14.4",
+        "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+        "sklearn": "1.9.0",
+        "imblearn": "0.14.2",
+        "xgboost": "3.4.1",
+        "numpy": "2.5.2",
+        "pandas": "3.0.5",
+        "joblib": "1.5.3",
+        "rapidfuzz": "3.14.5"
+      },
+      "clamav_version_y_firmas": "ClamAV 1.5.4/28173/Tue Nov  3 06:27:52 2026"
+    },
+    "pyscan": {
+      "n": 300,
+      "vp": 130,
+      "fp": 5,
+      "vn": 145,
+      "fn": 20,
+      "recall": {
+        "k": 130,
+        "n": 150,
+        "valor": 0.8667,
+        "ic95": [
+          0.803,
+          0.912
+        ]
+      },
+      "fpr": {
+        "k": 5,
+        "n": 150,
+        "valor": 0.0333,
+        "ic95": [
+          0.0143,
+          0.0757
+        ]
+      },
+      "precision": {
+        "k": 130,
+        "n": 135,
+        "valor": 0.963,
+        "ic95": [
+          0.9162,
+          0.9841
+        ]
+      },
+      "f1": 0.9123
+    },
+    "clamav_politica_A": {
+      "n": 300,
+      "vp": 0,
+      "fp": 0,
+      "vn": 150,
+      "fn": 150,
+      "recall": {
+        "k": 0,
+        "n": 150,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.025
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 150,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.025
+        ]
+      },
+      "precision": {
+        "k": 0,
+        "n": 0,
+        "valor": null,
+        "ic95": [
+          null,
+          null
+        ]
+      },
+      "f1": 0.0
+    },
+    "clamav_politica_B": {
+      "n": 300,
+      "vp": 0,
+      "fp": 0,
+      "vn": 150,
+      "fn": 150,
+      "recall": {
+        "k": 0,
+        "n": 150,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.025
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 150,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.025
+        ]
+      },
+      "precision": {
+        "k": 0,
+        "n": 0,
+        "valor": null,
+        "ic95": [
+          null,
+          null
+        ]
+      },
+      "f1": 0.0
+    },
+    "clamav_politica_C": {
+      "n": 300,
+      "vp": 0,
+      "fp": 0,
+      "vn": 150,
+      "fn": 150,
+      "recall": {
+        "k": 0,
+        "n": 150,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.025
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 150,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.025
+        ]
+      },
+      "precision": {
+        "k": 0,
+        "n": 0,
+        "valor": null,
+        "ic95": [
+          null,
+          null
+        ]
+      },
+      "f1": 0.0
+    }
+  },
+  "virustotal": {
+    "muestras": 80,
+    "por_clase_y_fuente": {
+      "malicious/malregistry": 35,
+      "malicious/datadog": 5,
+      "benign/top": 28,
+      "benign/aleatoria": 12
+    },
+    "errores_herramienta": 0,
+    "errores_por_clase": {},
+    "ejecucion": {
+      "fecha": "2026-11-05T20:30:18.815378+00:00",
+      "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+      "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+      "manifiesto_holdout": "data/holdout_grouped.csv",
+      "versiones": {
+        "python": "3.14.4",
+        "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+        "sklearn": "1.9.0",
+        "imblearn": "0.14.2",
+        "xgboost": "3.4.1",
+        "numpy": "2.5.2",
+        "pandas": "3.0.5",
+        "joblib": "1.5.3",
+        "rapidfuzz": "3.14.5"
+      },
+      "virustotal": "API v3, consulta solo por sha256 (no se suben archivos)",
+      "min_detecciones": 2
+    },
+    "pyscan": {
+      "n": 80,
+      "vp": 37,
+      "fp": 2,
+      "vn": 38,
+      "fn": 3,
+      "recall": {
+        "k": 37,
+        "n": 40,
+        "valor": 0.925,
+        "ic95": [
+          0.8014,
+          0.9742
+        ]
+      },
+      "fpr": {
+        "k": 2,
+        "n": 40,
+        "valor": 0.05,
+        "ic95": [
+          0.0138,
+          0.165
+        ]
+      },
+      "precision": {
+        "k": 37,
+        "n": 39,
+        "valor": 0.9487,
+        "ic95": [
+          0.8311,
+          0.9858
+        ]
+      },
+      "f1": 0.9367
+    },
+    "virustotal_politica_A": {
+      "n": 80,
+      "vp": 17,
+      "fp": 0,
+      "vn": 40,
+      "fn": 23,
+      "recall": {
+        "k": 17,
+        "n": 40,
+        "valor": 0.425,
+        "ic95": [
+          0.2851,
+          0.5781
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 40,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.0876
+        ]
+      },
+      "precision": {
+        "k": 17,
+        "n": 17,
+        "valor": 1.0,
+        "ic95": [
+          0.8157,
+          1.0
+        ]
+      },
+      "f1": 0.5965
+    },
+    "virustotal_politica_B": {
+      "n": 80,
+      "vp": 17,
+      "fp": 0,
+      "vn": 40,
+      "fn": 23,
+      "recall": {
+        "k": 17,
+        "n": 40,
+        "valor": 0.425,
+        "ic95": [
+          0.2851,
+          0.5781
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 40,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.0876
+        ]
+      },
+      "precision": {
+        "k": 17,
+        "n": 17,
+        "valor": 1.0,
+        "ic95": [
+          0.8157,
+          1.0
+        ]
+      },
+      "f1": 0.5965
+    },
+    "virustotal_politica_C": {
+      "n": 80,
+      "vp": 17,
+      "fp": 0,
+      "vn": 40,
+      "fn": 23,
+      "recall": {
+        "k": 17,
+        "n": 40,
+        "valor": 0.425,
+        "ic95": [
+          0.2851,
+          0.5781
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 40,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.0876
+        ]
+      },
+      "precision": {
+        "k": 17,
+        "n": 17,
+        "valor": 1.0,
+        "ic95": [
+          0.8157,
+          1.0
+        ]
+      },
+      "f1": 0.5965
+    },
+    "vt_registradas_por_clase": {
+      "malicious/registrada": 36,
+      "malicious/no registrada": 4,
+      "benign/no registrada": 13,
+      "benign/registrada": 27
+    },
+    "virustotal_solo_registradas": {
+      "n": 63,
+      "vp": 17,
+      "fp": 0,
+      "vn": 27,
+      "fn": 19,
+      "recall": {
+        "k": 17,
+        "n": 36,
+        "valor": 0.4722,
+        "ic95": [
+          0.3199,
+          0.6299
+        ]
+      },
+      "fpr": {
+        "k": 0,
+        "n": 27,
+        "valor": 0.0,
+        "ic95": [
+          0.0,
+          0.1246
+        ]
+      },
+      "precision": {
+        "k": 17,
+        "n": 17,
+        "valor": 1.0,
+        "ic95": [
+          0.8157,
+          1.0
+        ]
+      },
+      "f1": 0.6415
+    },
+    "pyscan_solo_registradas": {
+      "n": 63,
+      "vp": 34,
+      "fp": 1,
+      "vn": 26,
+      "fn": 2,
+      "recall": {
+        "k": 34,
+        "n": 36,
+        "valor": 0.9444,
+        "ic95": [
+          0.8186,
+          0.9846
+        ]
+      },
+      "fpr": {
+        "k": 1,
+        "n": 27,
+        "valor": 0.037,
+        "ic95": [
+          0.0066,
+          0.1828
+        ]
+      },
+      "precision": {
+        "k": 34,
+        "n": 35,
+        "valor": 0.9714,
+        "ic95": [
+          0.8547,
+          0.9949
+        ]
+      },
+      "f1": 0.9577
+    }
+  },
+  "nota": "Política A excluye los errores de la herramienta; B los cuenta como 'no alertó'; C como error de clasificación. pyscan se cuenta siempre con B (si falla, no alerta). Las conclusiones se limitan a estas muestras."
+}

@@ -3,35 +3,54 @@
   "n_malicious": 150,
   "n_benign": 150,
   "threat_min": 1,
-  "guarddog_errors": 2,
+  "guarddog_errors": 3,
   "pyscan": {
-    "recall": 0.88,
-    "precision": 0.9565,
-    "f1": 0.9167,
-    "false_positive_rate": 0.04,
-    "tp": 132,
-    "fp": 6,
-    "tn": 144,
-    "fn": 18
+    "recall": 0.8667,
+    "precision": 0.963,
+    "f1": 0.9123,
+    "false_positive_rate": 0.0333,
+    "tp": 130,
+    "fp": 5,
+    "tn": 145,
+    "fn": 20
   },
   "guarddog": {
-    "recall": 0.8267,
-    "precision": 0.7799,
-    "f1": 0.8026,
-    "false_positive_rate": 0.2365,
-    "tp": 124,
-    "fp": 35,
-    "tn": 113,
-    "fn": 26
+    "recall": 0.8467,
+    "precision": 0.7427,
+    "f1": 0.7913,
+    "false_positive_rate": 0.2993,
+    "tp": 127,
+    "fp": 44,
+    "tn": 103,
+    "fn": 23
   },
   "recall_by_source": {
     "datadog": {
-      "pyscan": 0.8696,
-      "guarddog": 0.8261
+      "pyscan": 0.85,
+      "guarddog": 0.85
     },
     "malregistry": {
-      "pyscan": 0.8819,
-      "guarddog": 0.8268
+      "pyscan": 0.8692,
+      "guarddog": 0.8462
     }
+  },
+  "ejecucion": {
+    "fecha": "2026-11-05T19:19:45.972250+00:00",
+    "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+    "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+    "manifiesto_holdout": "data/holdout_grouped.csv",
+    "versiones": {
+      "python": "3.14.4",
+      "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+      "sklearn": "1.9.0",
+      "imblearn": "0.14.2",
+      "xgboost": "3.4.1",
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "joblib": "1.5.3",
+      "rapidfuzz": "3.14.5"
+    },
+    "guarddog_version": "3.2.0",
+    "politica_errores": "excluidos del conteo de GuardDog; ver report_comparisons.py para la política común"
   }
 }

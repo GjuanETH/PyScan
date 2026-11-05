@@ -4,14 +4,14 @@
   "n_benign": 150,
   "clamav_errors": 0,
   "pyscan": {
-    "recall": 0.88,
-    "precision": 0.9565,
-    "f1": 0.9167,
-    "false_positive_rate": 0.04,
-    "tp": 132,
-    "fp": 6,
-    "tn": 144,
-    "fn": 18
+    "recall": 0.8667,
+    "precision": 0.963,
+    "f1": 0.9123,
+    "false_positive_rate": 0.0333,
+    "tp": 130,
+    "fp": 5,
+    "tn": 145,
+    "fn": 20
   },
   "clamav": {
     "recall": 0.0,
@@ -25,12 +25,30 @@
   },
   "recall_by_source": {
     "datadog": {
-      "pyscan": 0.8696,
+      "pyscan": 0.85,
       "clamav": 0.0
     },
     "malregistry": {
-      "pyscan": 0.8819,
+      "pyscan": 0.8692,
       "clamav": 0.0
     }
+  },
+  "ejecucion": {
+    "fecha": "2026-11-05T20:05:15.561687+00:00",
+    "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+    "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+    "manifiesto_holdout": "data/holdout_grouped.csv",
+    "versiones": {
+      "python": "3.14.4",
+      "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+      "sklearn": "1.9.0",
+      "imblearn": "0.14.2",
+      "xgboost": "3.4.1",
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "joblib": "1.5.3",
+      "rapidfuzz": "3.14.5"
+    },
+    "clamav_version_y_firmas": "ClamAV 1.5.4/28173/Tue Nov  3 06:27:52 2026"
   }
 }

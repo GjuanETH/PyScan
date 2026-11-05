@@ -1,0 +1,40 @@
+ M data/analysis/ablation.csv
+ M data/analysis/ablation.json
+ M data/analysis/ablation.png
+ M data/analysis/compare_antivirus.json
+ M data/analysis/compare_antivirus_per_sample.csv
+ M data/analysis/compare_guarddog.json
+ M data/analysis/compare_guarddog_per_sample.csv
+ M data/analysis/compare_virustotal.json
+ M data/analysis/compare_virustotal_per_sample.csv
+ M data/analysis/imbalance.json
+ M data/analysis/imbalance.png
+ M data/analysis/imbalance_projection.csv
+ M data/models/metrics.json
+ M data/top_pypi_packages.txt
+?? data/analysis/baseline_rules.json
+?? data/analysis/benchmark.json
+?? data/analysis/benchmark_per_package.csv
+?? data/analysis/comparisons_report.json
+?? data/analysis/exclusiones.csv
+?? data/analysis/feature_refresh.json
+?? data/analysis/git_status_20261105_1912.txt
+?? data/analysis/holdout_report.json
+?? data/analysis/independence_audit.json
+?? data/analysis/independence_pairs.csv
+?? data/analysis/pred_holdout.csv
+?? data/analysis/pred_oof.csv
+?? data/analysis/variante_comparacion_smote/
+?? data/analysis_antes/
+?? data/dataset.csv
+?? data/features_all.csv
+?? data/features_holdout.csv
+?? data/features_train.csv
+?? data/holdout.csv
+?? data/holdout_grouped.csv
+?? data/models/metrics_antes.json
+?? data/models/model.joblib.sha256
+?? data/random_pypi_names.txt
+?? data/reference/
+?? data/train.csv
+?? data/train_grouped.csv

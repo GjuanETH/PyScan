@@ -1,0 +1,44 @@
+{
+  "train_grouped.csv": {
+    "extractor_commit": "37668b9d6862d57c39e25d6312016bae0dfd0a0a-modificado",
+    "fecha": "2026-11-05T17:11:55.158168+00:00",
+    "muestras_reextraidas": 3558,
+    "comparables_con_cache_anterior": 3501,
+    "vectores_que_cambiaron": 0,
+    "cambios_por_caracteristica": {
+      "name_min_distance": 0,
+      "is_typosquat": 0,
+      "has_combo_affix": 0,
+      "entropy_max": 0,
+      "entropy_mean": 0,
+      "entropy_suspicious_windows": 0,
+      "ast_dangerous_calls": 0,
+      "ast_network_literals": 0,
+      "ast_has_install_hook": 0
+    },
+    "excluidas_ahora": 25,
+    "antes_excluidas_ahora_incluidas": 57,
+    "antes_incluidas_ahora_excluidas": 0
+  },
+  "holdout_grouped.csv": {
+    "extractor_commit": "37668b9d6862d57c39e25d6312016bae0dfd0a0a-modificado",
+    "fecha": "2026-11-05T17:15:27.702530+00:00",
+    "muestras_reextraidas": 891,
+    "comparables_con_cache_anterior": 871,
+    "vectores_que_cambiaron": 0,
+    "cambios_por_caracteristica": {
+      "name_min_distance": 0,
+      "is_typosquat": 0,
+      "has_combo_affix": 0,
+      "entropy_max": 0,
+      "entropy_mean": 0,
+      "entropy_suspicious_windows": 0,
+      "ast_dangerous_calls": 0,
+      "ast_network_literals": 0,
+      "ast_has_install_hook": 0
+    },
+    "excluidas_ahora": 5,
+    "antes_excluidas_ahora_incluidas": 20,
+    "antes_incluidas_ahora_excluidas": 0
+  }
+}

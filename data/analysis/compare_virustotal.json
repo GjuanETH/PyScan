@@ -3,77 +3,96 @@
   "n_malicious": 40,
   "n_benign": 40,
   "min_detections": 2,
-  "vt_hashes_found": 57,
+  "vt_hashes_found": 63,
   "pyscan": {
-    "recall": 0.825,
-    "precision": 0.9429,
-    "f1": 0.88,
+    "recall": 0.925,
+    "precision": 0.9487,
+    "f1": 0.9367,
     "false_positive_rate": 0.05,
-    "tp": 33,
+    "tp": 37,
     "fp": 2,
     "tn": 38,
-    "fn": 7
+    "fn": 3
   },
   "virustotal": {
-    "recall": 0.55,
+    "recall": 0.425,
     "precision": 1.0,
-    "f1": 0.7097,
+    "f1": 0.5965,
     "false_positive_rate": 0.0,
-    "tp": 22,
+    "tp": 17,
     "fp": 0,
     "tn": 40,
-    "fn": 18
+    "fn": 23
   },
   "engines_top": {
     "Kaspersky": {
-      "malware_detectado": 24,
-      "recall": 0.6
+      "malware_detectado": 27,
+      "recall": 0.675
     },
     "ZoneAlarm": {
-      "malware_detectado": 17,
-      "recall": 0.425
-    },
-    "Ikarus": {
-      "malware_detectado": 6,
-      "recall": 0.15
+      "malware_detectado": 14,
+      "recall": 0.35
     },
     "Google": {
-      "malware_detectado": 6,
-      "recall": 0.15
-    },
-    "ESET-NOD32": {
-      "malware_detectado": 3,
-      "recall": 0.075
-    },
-    "Tencent": {
-      "malware_detectado": 3,
-      "recall": 0.075
-    },
-    "Rising": {
-      "malware_detectado": 3,
-      "recall": 0.075
-    },
-    "alibabacloud": {
-      "malware_detectado": 3,
-      "recall": 0.075
-    },
-    "TrendMicro": {
-      "malware_detectado": 2,
-      "recall": 0.05
+      "malware_detectado": 7,
+      "recall": 0.175
     },
     "Lionic": {
-      "malware_detectado": 2,
-      "recall": 0.05
+      "malware_detectado": 5,
+      "recall": 0.125
+    },
+    "Arcabit": {
+      "malware_detectado": 5,
+      "recall": 0.125
+    },
+    "ESET-NOD32": {
+      "malware_detectado": 5,
+      "recall": 0.125
+    },
+    "Avast": {
+      "malware_detectado": 5,
+      "recall": 0.125
+    },
+    "BitDefender": {
+      "malware_detectado": 5,
+      "recall": 0.125
+    },
+    "Tencent": {
+      "malware_detectado": 5,
+      "recall": 0.125
+    },
+    "VIPRE": {
+      "malware_detectado": 5,
+      "recall": 0.125
     }
   },
   "recall_by_source": {
     "datadog": {
-      "pyscan": 0.7778,
-      "virustotal": 0.3333
+      "pyscan": 0.8,
+      "virustotal": 0.6
     },
     "malregistry": {
-      "pyscan": 0.8387,
-      "virustotal": 0.6129
+      "pyscan": 0.9429,
+      "virustotal": 0.4
     }
+  },
+  "ejecucion": {
+    "fecha": "2026-11-05T20:30:18.815378+00:00",
+    "git_commit": "8df0422f4a8b22736f5b5855d0ab19beae8cb2c5-modificado",
+    "modelo_sha256": "18749c474f57ec049e8ac0872e05201308a3215ac1eb7730ba4239350e9be31d",
+    "manifiesto_holdout": "data/holdout_grouped.csv",
+    "versiones": {
+      "python": "3.14.4",
+      "platform": "Linux-7.0.0-42-generic-x86_64-with-glibc2.43",
+      "sklearn": "1.9.0",
+      "imblearn": "0.14.2",
+      "xgboost": "3.4.1",
+      "numpy": "2.5.2",
+      "pandas": "3.0.5",
+      "joblib": "1.5.3",
+      "rapidfuzz": "3.14.5"
+    },
+    "virustotal": "API v3, consulta solo por sha256 (no se suben archivos)",
+    "min_detecciones": 2
   }
 }
