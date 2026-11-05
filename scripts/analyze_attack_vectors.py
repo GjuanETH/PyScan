@@ -19,9 +19,15 @@ Vectores medidos (mapeados a la taxonomía de la literatura):
   V7  Red / exfiltración                 (AST: literales de red + socket/urllib/requests)
 
 Uso:
-    python scripts/analyze_attack_vectors.py               # usa data/malicious/
+    python scripts/analyze_attack_vectors.py                 # manifiestos de config.yaml
     python scripts/analyze_attack_vectors.py --from-csv data/dataset.csv
+    python scripts/analyze_attack_vectors.py --scan-dir      # recorre data/malicious/
     python scripts/analyze_attack_vectors.py --limit 500
+
+Con los manifiestos, cada fila lleva sha256 y partición; si existe
+data/analysis/pred_holdout.csv se calcula además la cobertura demostrada: el
+Recall del modelo sobre las muestras maliciosas del hold-out que presentan cada
+vector (data/analysis/attack_vector_coverage.json).
 """
 
 from __future__ import annotations
@@ -29,7 +35,6 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import re
 import sys
 import tempfile
 from collections import Counter
@@ -37,12 +42,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+sys.path.insert(0, str(ROOT / "scripts"))
 
 from pyscan import config  # noqa: E402
 from pyscan.extractors import (ASTExtractor, EntropyExtractor,  # noqa: E402
                                MetadataExtractor)
-from pyscan.fetcher import FetchError, safe_extract  # noqa: E402
+from pyscan.fetcher import safe_extract  # noqa: E402
 from pyscan.models import ASTReport, EntropyReport, TyposquatReport  # noqa: E402
+import train_model as tm  # noqa: E402
+from report_utils import wilson  # noqa: E402
 
 OUT_DIR = config.DATA_DIR / "analysis"
 ARCHIVE_EXTS = (".tar.gz", ".tgz", ".whl", ".zip", ".egg", ".tar")
@@ -61,13 +69,8 @@ _NET_TOKENS = ("socket", "urllib", "requests", "http", "ftplib", "smtplib")
 
 
 def _package_name(path: Path) -> str:
-    stem = path.name
-    for ext in ARCHIVE_EXTS:
-        if stem.lower().endswith(ext):
-            stem = stem[: -len(ext)]
-            break
-    m = re.match(r"^(?P<n>.+?)-\d", stem)
-    return (m.group("n") if m else stem).lower().replace("_", "-")
+    """Nombre PEP 503 con la misma regla del entrenamiento (train_model.sample_identity)."""
+    return tm.sample_identity(path)[0]
 
 
 def _classify(name: str, typo: TyposquatReport, entropy: EntropyReport,
@@ -115,26 +118,56 @@ def _iter_samples(malicious_dir: Path):
             yield _package_name(d), d, "dir"
 
 
-def _iter_from_csv(csv_path: Path):
+def _iter_from_csv(csv_path: Path, split: str = ""):
     with open(csv_path, newline="", encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
             if row.get("label") != "malicious":
                 continue
             p = ROOT / row["path"]
             kind = row.get("kind", "archive")
-            yield _package_name(p), p, kind
+            yield _package_name(p), p, kind, row.get("sha256", ""), split
+
+
+def _iter_manifests():
+    for split in ("train", "holdout"):
+        yield from _iter_from_csv(tm.manifest_path(split), split)
+
+
+def _coverage(rows: list[dict]) -> dict | None:
+    """Recall del modelo por vector sobre los maliciosos del hold-out."""
+    pred_path = OUT_DIR / "pred_holdout.csv"
+    if not pred_path.exists():
+        return None
+    with open(pred_path, newline="", encoding="utf-8") as fh:
+        pred = {r["sha256"]: r["pred_malicious"] == "1" for r in csv.DictReader(fh)}
+    hold = [r for r in rows if r.get("split") == "holdout" and r.get("sha256") in pred]
+    out = {"n_maliciosos_holdout": len(hold), "vectores": {}}
+    for vid, label in VECTORS.items():
+        sub = [r for r in hold if r[vid]]
+        k = sum(1 for r in sub if pred[r["sha256"]])
+        lo, hi = wilson(k, len(sub)) if sub else (None, None)
+        out["vectores"][vid] = {"label": label, "n": len(sub), "detectadas": k,
+                                "recall": round(k / len(sub), 4) if sub else None,
+                                "ic95": [lo, hi]}
+    return out
 
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--from-csv", type=Path, default=None,
-                    help="usa un manifiesto CSV (col. label=malicious) en vez de data/malicious/")
+                    help="usa un manifiesto CSV (col. label=malicious)")
+    ap.add_argument("--scan-dir", action="store_true",
+                    help="recorre data/malicious/ en vez de los manifiestos de config.yaml")
     ap.add_argument("--limit", type=int, default=0, help="máximo de muestras (0 = todas)")
     args = ap.parse_args()
 
-    source = (_iter_from_csv(args.from_csv) if args.from_csv
-              else _iter_samples(config.MALICIOUS_DIR))
+    if args.from_csv:
+        source = _iter_from_csv(args.from_csv)
+    elif args.scan_dir:
+        source = ((n, p, k, "", "") for n, p, k in _iter_samples(config.MALICIOUS_DIR))
+    else:
+        source = _iter_manifests()
     meta = MetadataExtractor()
 
     n = 0
@@ -144,7 +177,8 @@ def main() -> int:
     call_families = Counter()
     per_sample_rows = []
 
-    for name, path, kind in source:
+    error_rows = []
+    for name, path, kind, sha, split in source:
         if args.limit and n >= args.limit:
             break
         try:
@@ -157,6 +191,7 @@ def main() -> int:
         except Exception as exc:  # noqa: BLE001 - robustez ante muestras corruptas
             print(f"  [AVISO] {path.name}: {exc}", file=sys.stderr)
             errors += 1
+            error_rows.append({"sha256": sha, "path": str(path), "error": str(exc)[:200]})
             continue
 
         n += 1
@@ -166,11 +201,12 @@ def main() -> int:
         cooccurrence[len(active)] += 1
         for c in calls:
             call_families[c] += 1
-        per_sample_rows.append({"package": name, "kind": kind,
+        per_sample_rows.append({"package": name, "kind": kind, "sha256": sha, "split": split,
                                 **{k: int(v) for k, v in flags.items()}})
 
     if n == 0:
-        print("No se analizaron muestras. ¿Descargaste el dataset? Ver docs/INSTRUCTIVO_DATASETS.md")
+        print("No se analizaron muestras. ¿Descargaste el dataset? "
+              "Ver docs/INSTRUCTIVO_DATASETS.md")
         return 1
 
     summary = {
@@ -185,14 +221,19 @@ def main() -> int:
         "multi_vector_percentage": round(
             100 * sum(v for k, v in cooccurrence.items() if k >= 2) / n, 2),
         "top_dangerous_calls": dict(call_families.most_common(15)),
+        "errores_detalle": error_rows,
+        "git_commit": tm.git_commit(),
     }
+    cov = _coverage(per_sample_rows)
+    if cov is not None:
+        summary["cobertura_demostrada_holdout"] = cov
 
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "attack_vectors.json").write_text(
         json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "attack_vectors_per_sample.csv", "w", newline="",
               encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=["package", "kind", *VECTORS.keys()])
+        w = csv.DictWriter(fh, fieldnames=["package", "kind", "sha256", "split", *VECTORS.keys()])
         w.writeheader()
         w.writerows(per_sample_rows)
 
@@ -203,6 +244,11 @@ def main() -> int:
         v = summary["vectors"][vid]
         print(f"| {vid.split('_')[0]} | {v['label']} | {v['count']} | {v['percentage']}% |")
     print(f"\nPaquetes con >=2 vectores simultaneos: {summary['multi_vector_percentage']}%")
+    if cov is not None:
+        print(f"\nCobertura demostrada (Recall del modelo en el hold-out, "
+              f"{cov['n_maliciosos_holdout']} maliciosos):")
+        for vid, v in cov["vectores"].items():
+            print(f"  {vid}: {v['detectadas']}/{v['n']}  IC95 {v['ic95']}")
     print(f"\nSalidas: {OUT_DIR/'attack_vectors.json'}")
     print(f"         {OUT_DIR/'attack_vectors_per_sample.csv'}")
     return 0

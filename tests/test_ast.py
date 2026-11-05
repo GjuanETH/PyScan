@@ -145,3 +145,13 @@ def test_deeply_nested_file_is_skipped_not_fatal(tmp_path):
     (tmp_path / "ok.py").write_text("import os\nos.system('id')\n")
     rep = ASTExtractor().extract(tmp_path)
     assert "os.system" in rep.dangerous_calls
+
+
+def test_detects_insecure_deserialization(tmp_path):
+    # RF06 / V5: pickle.loads y marshal.loads, también con alias de import.
+    (tmp_path / "d.py").write_text(
+        "import pickle\nimport marshal as m\nfrom pickle import loads as ld\n"
+        "pickle.loads(b'')\nm.loads(b'')\nld(b'')\n"
+    )
+    rep = ASTExtractor().extract(tmp_path)
+    assert {"pickle.loads", "marshal.loads"}.issubset(set(rep.dangerous_calls))
