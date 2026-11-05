@@ -8,7 +8,7 @@ digraph G {
   Meta [label="Reporte\nmetadatos"];
   Ent [label="Reporte\nentropía"];
   AST [label="Reporte\nAST"];
-  FV [label="FeatureVector\n(14 características)"];
+  FV [label="FeatureVector\n(9 características)"];
   ML [label="MLPrediction\n(score + veredicto)"];
   Out [label="ScanReport\nJSON / SARIF", shape=ellipse fillcolor="#BDD7EE"];
 
