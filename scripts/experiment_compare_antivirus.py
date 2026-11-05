@@ -120,11 +120,13 @@ def main() -> int:
         if not p.exists():
             continue
         # pyscan
+        py_err = ""
         try:
             fv = FeatureVector(**tm.extract_row(p, kind, meta))
             py_mal = predict(fv, bundle=bundle).verdict == Verdict.MALICIOUS
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - cuenta como 'no alertó' (política B)
             py_mal = False
+            py_err = f"{type(exc).__name__}: {exc}"[:200]
         # ClamAV
         n_inf, info = _clamav_flag(p)
         if n_inf < 0:
@@ -141,13 +143,16 @@ def main() -> int:
         tally(py, py_mal); tally(av, av_mal)
         if is_mal:
             tally(py_by_src[src], py_mal); tally(av_by_src[src], av_mal)
-        per_sample.append({"package": p.name, "label": row["label"], "source": src,
+        per_sample.append({"package": p.name, "sha256": row.get("sha256", ""), "pyscan_error": py_err, "label": row["label"], "source": src,
                            "pyscan_malicious": bool(py_mal),
                            "clamav_malicious": None if av_mal is None else bool(av_mal),
                            "clamav_signatures": ";".join(info.get("signatures", []))})
         if i % 25 == 0:
             print(f"  {i}/{len(sample)} procesados...")
 
+    n_err = sum(1 for r in per_sample if r["pyscan_error"])
+    if n_err:
+        print(f"AVISO: pyscan no pudo analizar {n_err} muestras (columna pyscan_error)")
     py_m = _metrics(**py); av_m = _metrics(**av)
     print("\n== Resultados globales ==")
     print("| Detector | Recall | Precisión | F1 | FP |")
@@ -178,7 +183,7 @@ def main() -> int:
     (OUT_DIR / "compare_antivirus.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "compare_antivirus_per_sample.csv", "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=["package", "label", "source",
+        w = csv.DictWriter(fh, fieldnames=["package", "sha256", "label", "source", "pyscan_error",
                            "pyscan_malicious", "clamav_malicious", "clamav_signatures"])
         w.writeheader(); w.writerows(per_sample)
     print(f"\nDatos: {OUT_DIR/'compare_antivirus.json'} | {OUT_DIR/'compare_antivirus_per_sample.csv'}")

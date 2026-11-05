@@ -156,14 +156,43 @@ def safe_extract(archive_path: Path, dest_dir: Path) -> Path:
     evite el análisis de todo su contenido.
     """
     dest_dir.mkdir(parents=True, exist_ok=True)
-    name = archive_path.name.lower()
-    if name.endswith((".tar.gz", ".tgz", ".tar")):
+    kind = archive_format(archive_path)
+    if kind == "tar":
         _safe_extract_tar(archive_path, dest_dir)
-    elif name.endswith((".whl", ".zip", ".egg")):
+    elif kind == "zip":
         _safe_extract_zip(archive_path, dest_dir)
     else:
         raise FetchError(f"Formato de archivo no soportado: {archive_path.name}")
     return dest_dir
+
+
+_ZIP_MAGIC = (b"PK\x03\x04", b"PK\x05\x06", b"PK\x07\x08")
+_TAR_COMPRESSED_MAGIC = (b"\x1f\x8b", b"BZh", b"\xfd7zXZ\x00")
+
+
+def archive_format(archive_path: Path) -> Optional[str]:
+    """'tar', 'zip' o None según el CONTENIDO (bytes mágicos), no la extensión.
+
+    Un wheel (zip) renombrado a .tar.gz se abre como zip: la extensión la
+    controla quien publica el archivo y no debe decidir si se analiza. Si el
+    contenido no es reconocible se usa la extensión, y el extractor
+    correspondiente reporta el archivo como ilegible.
+    """
+    try:
+        with open(archive_path, "rb") as fh:
+            head = fh.read(262)
+    except OSError:
+        head = b""
+    if head.startswith(_ZIP_MAGIC):
+        return "zip"
+    if head.startswith(_TAR_COMPRESSED_MAGIC) or head[257:262] == b"ustar":
+        return "tar"
+    name = archive_path.name.lower()
+    if name.endswith((".tar.gz", ".tgz", ".tar")):
+        return "tar"
+    if name.endswith((".whl", ".zip", ".egg")):
+        return "zip"
+    return None
 
 
 def _safe_extract_tar(archive_path: Path, dest_dir: Path) -> None:

@@ -182,8 +182,8 @@ def main() -> int:
     cache = load_cache()
     with open(FP_CACHE, "a", encoding="utf-8") as fh:
         for i, r in enumerate(rows, 1):
-            if r["sha256"] in cache:
-                continue
+            if cache.get(r["sha256"]) is not None:
+                continue  # las fallidas (None) se reintentan: el extractor pudo mejorar
             fp = fingerprints(r)
             cache[r["sha256"]] = fp
             fh.write(json.dumps({"sha256": r["sha256"], "fp": fp}) + "\n")

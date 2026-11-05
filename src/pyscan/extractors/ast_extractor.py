@@ -235,8 +235,9 @@ class ASTExtractor:
             try:
                 source = path.read_text(encoding="utf-8", errors="replace")
                 tree = ast.parse(source, filename=str(path))
-            except (OSError, SyntaxError, ValueError):
-                # Código ilegible o intencionalmente roto: se omite ese archivo.
+            except (OSError, SyntaxError, ValueError, RecursionError, MemoryError):
+                # Código ilegible, intencionalmente roto o anidado al extremo: se
+                # omite ESE archivo y se sigue con el resto del paquete.
                 continue
             try:
                 relfile = str(path.relative_to(root)) if root.is_dir() else path.name
@@ -245,7 +246,10 @@ class ASTExtractor:
             # Un visitor por archivo: los alias de import son de ámbito local
             # al módulo y no deben contaminar el análisis de otros archivos.
             visitor = _Visitor(relfile)
-            visitor.visit(tree)
+            try:
+                visitor.visit(tree)
+            except RecursionError:
+                continue  # anidamiento extremo: se descarta solo este archivo
             dangerous |= visitor.dangerous
             imports |= visitor.imports
             network |= visitor.network

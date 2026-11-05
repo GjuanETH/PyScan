@@ -138,3 +138,10 @@ def test_exact_ips_and_url_hosts_are_counted(tmp_path: Path):
     assert "185.10.20.30" in rep.network_literals
     assert "http://185.10.20.30:8080/payload" in rep.network_literals
     assert "0.0.0.0" not in rep.network_literals
+
+
+def test_deeply_nested_file_is_skipped_not_fatal(tmp_path):
+    (tmp_path / "deep.py").write_text("x = " + "1+" * 100000 + "1\n")
+    (tmp_path / "ok.py").write_text("import os\nos.system('id')\n")
+    rep = ASTExtractor().extract(tmp_path)
+    assert "os.system" in rep.dangerous_calls

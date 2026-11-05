@@ -170,3 +170,24 @@ def test_parse_metadata_selects_sdist():
     assert package.sha256 == "bbb"
     assert metadata.has_long_description is True
     assert set(metadata.releases) == {"1.2.3", "1.2.2"}
+
+
+def test_wheel_renamed_as_tar_gz_is_extracted_as_zip(tmp_path: Path):
+    # Algunos repositorios publican wheels (zip) con extensión .tar.gz.
+    archive = tmp_path / "evil-1.0-py3-none-any.tar.gz"
+    with zipfile.ZipFile(archive, "w") as zf:
+        zf.writestr("evil/__init__.py", "import os\n")
+    dest = tmp_path / "out"
+    safe_extract(archive, dest)
+    assert (dest / "evil" / "__init__.py").exists()
+
+
+def test_tar_gz_renamed_as_whl_is_extracted_as_tar(tmp_path: Path):
+    src = tmp_path / "pkg.py"
+    src.write_text("x = 1\n")
+    archive = tmp_path / "pkg-1.0-py3-none-any.whl"
+    with tarfile.open(archive, "w:gz") as tf:
+        tf.add(src, arcname="pkg/pkg.py")
+    dest = tmp_path / "out"
+    safe_extract(archive, dest)
+    assert (dest / "pkg" / "pkg.py").exists()

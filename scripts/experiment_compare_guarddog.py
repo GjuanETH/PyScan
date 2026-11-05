@@ -136,11 +136,13 @@ def main() -> int:
             continue
 
         # pyscan
+        py_err = ""
         try:
             fv = FeatureVector(**tm.extract_row(p, kind, meta))
             py_mal = predict(fv, bundle=bundle).verdict == Verdict.MALICIOUS
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001 - cuenta como 'no alertó' (política B)
             py_mal = False
+            py_err = f"{type(exc).__name__}: {exc}"[:200]
 
         # GuardDog
         n_threat, info = _guarddog_flag(p, args.threat_min, no_sandbox=not args.sandbox)
@@ -162,13 +164,16 @@ def main() -> int:
         if is_mal:  # el desglose por fuente aplica al malware
             tally(py_by_src[src], py_mal); tally(gd_by_src[src], gd_mal)
 
-        per_sample.append({"package": p.name, "label": row["label"], "source": src,
+        per_sample.append({"package": p.name, "sha256": row.get("sha256", ""), "pyscan_error": py_err, "label": row["label"], "source": src,
                            "pyscan_malicious": bool(py_mal),
                            "guarddog_malicious": None if gd_mal is None else bool(gd_mal),
                            "guarddog_threat_rules": info.get("threat_rules", [])})
         if i % 25 == 0:
             print(f"  {i}/{len(sample)} procesados...")
 
+    n_err = sum(1 for r in per_sample if r["pyscan_error"])
+    if n_err:
+        print(f"AVISO: pyscan no pudo analizar {n_err} muestras (columna pyscan_error)")
     py_m = _metrics(**py); gd_m = _metrics(**gd)
 
     print("\n== Resultados globales ==")
@@ -201,7 +206,7 @@ def main() -> int:
     (OUT_DIR / "compare_guarddog.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "compare_guarddog_per_sample.csv", "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=["package", "label", "source",
+        w = csv.DictWriter(fh, fieldnames=["package", "sha256", "label", "source", "pyscan_error",
                            "pyscan_malicious", "guarddog_malicious", "guarddog_threat_rules"])
         w.writeheader()
         for r in per_sample:

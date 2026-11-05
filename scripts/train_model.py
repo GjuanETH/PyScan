@@ -272,7 +272,8 @@ def classify_exclusion(message: str) -> str:
     m = message.lower()
     if "no existe" in m:
         return "archivo no encontrado"
-    if "ilegible" in m or "not a gzip" in m or "readerror" in m or "bad zip" in m:
+    if any(k in m for k in ("ilegible", "not a gzip", "readerror", "bad zip", "eoferror",
+                            "compressed file ended")):
         return "corrupto o ilegible"
     if any(k in m for k in ("zip slip", "dispositivo", "tamaño máximo", "número máximo",
                             "formato de archivo no soportado")):
