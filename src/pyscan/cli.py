@@ -28,7 +28,7 @@ import typer
 
 from . import __version__
 from .classifier import ModelNotAvailable, predict
-from .extractors import ASTExtractor, EntropyExtractor, MetadataExtractor
+from .extractors import ASTExtractor, EntropyExtractor, MetadataExtractor, name_from_filename
 from .features import build_features
 from .fetcher import FetchError, fetch, fetch_from_local, get_pypi_json, parse_metadata
 from .models import Package, ScanReport, Verdict
@@ -123,13 +123,8 @@ def _scan_local(path: Path, model_path: Optional[Path]) -> tuple[ScanReport, Opt
 
 
 def _name_from_path(path: Path) -> str:
-    stem = path.name
-    for ext in _ARCHIVE_EXTS:
-        if stem.lower().endswith(ext):
-            stem = stem[: -len(ext)]
-            break
-    m = re.match(r"^(?P<n>.+?)-\d", stem)
-    return (m.group("n") if m else stem).lower().replace("_", "-")
+    """Nombre PEP 503 desde el archivo (misma regla que en el entrenamiento)."""
+    return name_from_filename(path.name)[0]
 
 
 def _parse_requirements(path: Path) -> List[str]:

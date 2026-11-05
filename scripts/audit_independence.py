@@ -37,7 +37,6 @@ import csv
 import hashlib
 import json
 import math
-import re
 import sys
 import tempfile
 import warnings
@@ -56,25 +55,14 @@ OUT_JSON = ROOT / "data" / "analysis" / "independence_audit.json"
 OUT_PAIRS = ROOT / "data" / "analysis" / "independence_pairs.csv"
 MIN_CHARS = 64
 JACCARD_T = 0.8
-_NAME_VER = re.compile(r"^(?P<name>.+?)-(?P<ver>\d[^-]*)")
-_ARCHIVE_EXTS = (".tar.gz", ".tgz", ".whl", ".zip", ".egg", ".tar")
 
 
-def normalize_name(name: str) -> str:
-    """Nombre normalizado según PEP 503."""
-    return re.sub(r"[-_.]+", "-", name).lower()
+normalize_name = tm.normalize_name
 
 
 def name_version(path: str) -> tuple[str, str]:
-    stem = Path(path).name
-    for ext in _ARCHIVE_EXTS:
-        if stem.lower().endswith(ext):
-            stem = stem[: -len(ext)]
-            break
-    m = _NAME_VER.match(stem)
-    if m:
-        return normalize_name(m.group("name")), m.group("ver")
-    return normalize_name(stem), ""
+    """Identidad (nombre PEP 503, versión) de la muestra; misma regla que el entrenamiento."""
+    return tm.sample_identity(path)
 
 
 def huella_py(src: str) -> str | None:

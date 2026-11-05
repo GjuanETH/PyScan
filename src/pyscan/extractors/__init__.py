@@ -9,11 +9,18 @@ conocer el resto del sistema.
 
 from .ast_extractor import ASTExtractor, extract_ast_features
 from .entropy import EntropyExtractor, extract_entropy_features, shannon_entropy
-from .metadata import MetadataExtractor, extract_metadata_features
+from .metadata import (
+    MetadataExtractor,
+    extract_metadata_features,
+    name_from_filename,
+    normalize_name,
+)
 
 __all__ = [
     "MetadataExtractor",
     "extract_metadata_features",
+    "name_from_filename",
+    "normalize_name",
     "EntropyExtractor",
     "extract_entropy_features",
     "shannon_entropy",

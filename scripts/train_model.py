@@ -47,13 +47,20 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from pyscan import config  # noqa: E402
 from pyscan.classifier import feature_names  # noqa: E402
-from pyscan.extractors import ASTExtractor, EntropyExtractor, MetadataExtractor  # noqa: E402
+from pyscan.extractors import (  # noqa: E402
+    ASTExtractor,
+    EntropyExtractor,
+    MetadataExtractor,
+    name_from_filename,
+    normalize_name,
+)
 from pyscan.features import build_features  # noqa: E402
 from pyscan.fetcher import safe_extract  # noqa: E402
 
 CONFIG_FILE = ROOT / "config.yaml"
 ANALYSIS_DIR = config.DATA_DIR / "analysis"
-_NAME_RE = re.compile(r"^(?P<name>.+?)-\d")
+_DATADOG_TOP = re.compile(r"^\d{4}-\d{2}-\d{2}-(?P<rest>.+)$")
+_DATADOG_VER = re.compile(r"^(?P<name>.+)-v(?P<ver>\d[^/]*)$")
 
 
 # --- Configuración y trazabilidad ------------------------------------------
@@ -130,21 +137,38 @@ def run_info(extra: dict | None = None) -> dict:
 
 
 # --- Extracción de características -----------------------------------------
+def sample_identity(path) -> tuple[str, str]:
+    """(nombre PEP 503, versión) de una muestra según la estructura de su fuente.
+
+    - datadog/<AAAA-MM-DD>-<nombre>-v<versión>/...: el nombre sale de la carpeta
+      superior; la ruta de la muestra puede ser un subdirectorio de importación
+      ('s3transfer' dentro de 's3transfer-sl') y no sirve como nombre.
+    - malregistry/<nombre>/<versión>/<archivo>: nombre y versión de las carpetas.
+    - resto (benignos): nombre del archivo (wheel/egg o sdist, ver
+      pyscan.extractors.metadata.name_from_filename).
+    """
+    parts = Path(str(path).replace("\\", "/")).parts
+    for i, part in enumerate(parts[:-1]):
+        if part == "datadog":
+            top = _DATADOG_TOP.match(parts[i + 1])
+            if top:
+                rest = top.group("rest")
+                m = _DATADOG_VER.match(rest)
+                if m:
+                    return normalize_name(m.group("name")), m.group("ver")
+                return name_from_filename(rest)
+        if part == "malregistry" and len(parts) > i + 3:
+            return normalize_name(parts[i + 1]), parts[i + 2]
+    return name_from_filename(parts[-1])
+
+
 def _package_name_from_file(path: Path) -> str:
-    """'requests-2.31.0.tar.gz' -> 'requests' (heurística de nombre)."""
-    stem = path.name
-    for ext in (".tar.gz", ".tgz", ".whl", ".zip", ".egg", ".tar"):
-        if stem.lower().endswith(ext):
-            stem = stem[: -len(ext)]
-            break
-    m = _NAME_RE.match(stem)
-    return (m.group("name") if m else stem).lower()
+    """Compatibilidad: nombre normalizado de la muestra."""
+    return sample_identity(path)[0]
 
 
 def _package_name_from_dir(path: Path) -> str:
-    stem = path.name
-    m = _NAME_RE.match(stem)
-    return (m.group("name") if m else stem).lower().replace("_", "-")
+    return sample_identity(path)[0]
 
 
 def _features_from_dir(name: str, root: Path, meta_extractor: MetadataExtractor) -> dict:
@@ -156,7 +180,7 @@ def _features_from_dir(name: str, root: Path, meta_extractor: MetadataExtractor)
 
 def extract_row(sample: Path, kind: str, meta_extractor: MetadataExtractor) -> dict:
     """FeatureVector de una muestra local, de forma segura ('archive' o 'dir')."""
-    name = _package_name_from_file(sample) if kind == "archive" else _package_name_from_dir(sample)
+    name = sample_identity(sample)[0]
     if kind == "dir":
         return _features_from_dir(name, sample, meta_extractor)
     with tempfile.TemporaryDirectory(prefix="pyscan_feat_") as tmp:

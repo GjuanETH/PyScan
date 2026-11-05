@@ -9,6 +9,7 @@ TyposquatReport tipado.
 from __future__ import annotations
 
 import functools
+import re
 from pathlib import Path
 from typing import Iterable, Optional
 
@@ -16,6 +17,38 @@ from rapidfuzz.distance import Levenshtein
 
 from .. import config
 from ..models import PackageMetadata, TyposquatReport
+
+_SEP_RE = re.compile(r"[-_.\s]+")
+_ARCHIVE_EXTS = (".tar.gz", ".tgz", ".whl", ".zip", ".egg", ".tar")
+_SDIST_RE = re.compile(r"^(?P<name>.+)-(?P<ver>\d[^-]*)$")
+
+
+def normalize_name(name: str) -> str:
+    """Nombre normalizado según PEP 503 ('Ruamel.YAML' -> 'ruamel-yaml')."""
+    return _SEP_RE.sub("-", name.strip()).strip("-").lower()
+
+
+def name_from_filename(filename: str) -> tuple[str, str]:
+    """(nombre normalizado, versión) a partir del nombre de un archivo o carpeta.
+
+    - wheel/egg: los dos primeros campos separados por '-' (PEP 427: el nombre
+      no contiene '-').
+    - sdist/carpeta: la versión es el ÚLTIMO '-<dígito>...' (búsqueda codiciosa),
+      para no truncar nombres como 'requests-2022-3.22.6' -> 'requests-2022'.
+    """
+    stem = filename
+    ext = ""
+    for e in _ARCHIVE_EXTS:
+        if stem.lower().endswith(e):
+            stem, ext = stem[: -len(e)], e
+            break
+    if ext in (".whl", ".egg"):
+        fields = stem.split("-")
+        return normalize_name(fields[0]), (fields[1] if len(fields) > 1 else "")
+    m = _SDIST_RE.match(stem)
+    if m:
+        return normalize_name(m.group("name")), m.group("ver")
+    return normalize_name(stem), ""
 
 
 @functools.lru_cache(maxsize=1)
@@ -28,7 +61,7 @@ def _load_reference_names(path: Optional[str] = None) -> tuple[str, ...]:
     file_path = Path(path) if path else config.TOP_PACKAGES_FILE
     if file_path.exists():
         names = [
-            line.strip().lower()
+            normalize_name(line)
             for line in file_path.read_text(encoding="utf-8").splitlines()
             if line.strip() and not line.startswith("#")
         ]
@@ -133,13 +166,13 @@ class MetadataExtractor:
 
     def __init__(self, reference_names: Optional[Iterable[str]] = None):
         self.reference = (
-            tuple(n.lower() for n in reference_names)
+            tuple(normalize_name(n) for n in reference_names)
             if reference_names is not None
             else _load_reference_names()
         )
 
     def extract(self, name: str, metadata: Optional[PackageMetadata] = None) -> TyposquatReport:
-        name_l = name.strip().lower()
+        name_l = normalize_name(name)
         core, suffixes = _strip_affix(name_l)
         threshold = config.TYPOSQUAT_DISTANCE_THRESHOLD
 
