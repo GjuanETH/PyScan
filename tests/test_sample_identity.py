@@ -1,5 +1,7 @@
 """Identidad de muestra (nombre, versión) usada en entrenamiento y auditoría."""
 
+import multiprocessing
+import os
 import sys
 from pathlib import Path
 
@@ -41,3 +43,35 @@ MR = "data/malicious/malregistry"
 )
 def test_sample_identity(path, expected):
     assert tm.sample_identity(path) == expected
+
+
+needs_fork = pytest.mark.skipif(
+    "fork" not in multiprocessing.get_all_start_methods(), reason="requiere fork (Linux)"
+)
+
+
+@needs_fork
+def test_extract_isolated_returns_features(tmp_path):
+    pkg = tmp_path / "demo-1.0"
+    pkg.mkdir()
+    (pkg / "setup.py").write_text("from setuptools import setup\nsetup(name='demo')\n")
+    feats = tm.extract_isolated(pkg, "dir", tm.MetadataExtractor(["requests"]), 1024, 60)
+    assert set(tm.feature_names()) <= set(feats)
+
+
+@needs_fork
+def test_extract_isolated_contains_memory_blowup(tmp_path, monkeypatch):
+    def greedy(*_a, **_k):
+        return bytearray(4 * 1024**3)  # 4 GB, por encima del límite de 256 MB
+
+    monkeypatch.setattr(tm, "extract_row", greedy)
+    with pytest.raises(RuntimeError, match="MemoryError"):
+        tm.extract_isolated(tmp_path, "dir", None, 256, 60)
+    assert tm.classify_exclusion("RuntimeError: MemoryError: x") == "excede límites de recursos"
+
+
+@needs_fork
+def test_extract_isolated_survives_dead_child(tmp_path, monkeypatch):
+    monkeypatch.setattr(tm, "extract_row", lambda *_a, **_k: os._exit(9))
+    with pytest.raises(RuntimeError):
+        tm.extract_isolated(tmp_path, "dir", None, 256, 60)

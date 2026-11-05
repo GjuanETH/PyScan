@@ -29,8 +29,15 @@ models:
 # Manifiestos (build_dataset.py los crea; audit_independence.py --resplit crea
 # las versiones agrupadas *_grouped.csv con la columna group_id).
 manifests:
-  train: data/train.csv
-  holdout: data/holdout.csv
+  train: data/train_grouped.csv
+  holdout: data/holdout_grouped.csv
+
+# Extracción de características: cada muestra en un proceso hijo (Linux) con
+# límite de memoria adicional y de tiempo. La que lo supere se excluye y queda en
+# data/analysis/exclusiones.csv con motivo "excede límites de recursos".
+extraction:
+  max_mem_mb: 2048
+  timeout_s: 600
 
 # Caché única de características (por sha256). --refresh-features la reconstruye.
 features_cache: data/features_all.csv

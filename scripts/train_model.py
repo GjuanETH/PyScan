@@ -8,6 +8,10 @@ Flujo (todos los parámetros salen de config.yaml):
      data/features_all.csv. Con --refresh-features se reextrae todo con el
      extractor actual y se cuenta qué muestras cambiaron (corrección 1.2).
      Cada muestra excluida queda en data/analysis/exclusiones.csv con su motivo.
+     En Linux cada muestra se procesa en un proceso hijo con límite de memoria y
+     de tiempo (config.yaml -> extraction): una muestra patológica se excluye en
+     vez de tumbar el entrenamiento, y la caché se guarda cada 100 muestras, así
+     que repetir el comando continúa donde iba.
   3. Validación cruzada estratificada (agrupada con StratifiedGroupKFold si el
      manifiesto trae group_id) con predicciones out-of-fold. Desbalance:
      class_weight / scale_pos_weight + SMOTENC (o SMOTE) SOLO dentro de cada
@@ -34,6 +38,7 @@ import argparse
 import csv
 import hashlib
 import json
+import multiprocessing
 import platform
 import re
 import subprocess
@@ -188,6 +193,80 @@ def extract_row(sample: Path, kind: str, meta_extractor: MetadataExtractor) -> d
         return _features_from_dir(name, extracted, meta_extractor)
 
 
+_EXTRACTOR_FILES = ("src/pyscan/extractors/*.py", "src/pyscan/features.py",
+                    "src/pyscan/fetcher.py", "src/pyscan/config.py",
+                    "data/top_pypi_packages.txt")
+
+
+def extractor_hash() -> str:
+    """Huella del código que produce el vector (extractores, lista Top y regla de nombres).
+
+    Una entrada de la caché se reutiliza con --refresh-features solo si fue
+    calculada con esta misma huella; así un --refresh interrumpido continúa.
+    """
+    h = hashlib.sha256()
+    files = sorted(f for pat in _EXTRACTOR_FILES for f in ROOT.glob(pat))
+    for f in files:
+        h.update(f.relative_to(ROOT).as_posix().encode())
+        h.update(f.read_bytes())
+    src = Path(__file__).read_text(encoding="utf-8")
+    start = src.index("def sample_identity")
+    h.update(src[start:src.index("def _package_name_from_file")].encode())
+    return h.hexdigest()[:16]
+
+
+def _extract_worker(conn, sample: str, kind: str, meta_extractor, mem_mb: int) -> None:
+    """Proceso hijo: fija el límite de memoria, extrae y devuelve el resultado."""
+    try:
+        if mem_mb:
+            import resource
+
+            with open("/proc/self/status", encoding="ascii") as fh:
+                vm_kb = next(int(ln.split()[1]) for ln in fh if ln.startswith("VmSize:"))
+            limit = vm_kb * 1024 + mem_mb * 1024 * 1024
+            resource.setrlimit(resource.RLIMIT_AS, (limit, limit))
+        conn.send(("ok", extract_row(Path(sample), kind, meta_extractor)))
+    except MemoryError:
+        conn.send(("error", f"MemoryError: superó el límite de {mem_mb} MB por muestra"))
+    except BaseException as exc:  # noqa: BLE001 - se informa al proceso padre
+        conn.send(("error", f"{type(exc).__name__}: {exc}"))
+    finally:
+        conn.close()
+
+
+def extract_isolated(sample: Path, kind: str, meta_extractor: MetadataExtractor,
+                     mem_mb: int = 2048, timeout_s: int = 600) -> dict:
+    """extract_row en un proceso hijo con límite de memoria y de tiempo.
+
+    Si la muestra agota memoria o tiempo, o el hijo muere, se lanza RuntimeError
+    (la muestra se excluye con su motivo) y el entrenamiento sigue. Fuera de
+    Linux (sin 'fork') se extrae en el mismo proceso.
+    """
+    if "fork" not in multiprocessing.get_all_start_methods():
+        return extract_row(sample, kind, meta_extractor)
+    ctx = multiprocessing.get_context("fork")
+    recv, send = ctx.Pipe(duplex=False)
+    proc = ctx.Process(target=_extract_worker,
+                       args=(send, str(sample), kind, meta_extractor, mem_mb))
+    proc.start()
+    send.close()
+    try:
+        if recv.poll(timeout_s):
+            status, payload = recv.recv()
+        else:
+            status, payload = "error", f"TimeoutError: superó {timeout_s} s por muestra"
+    except EOFError:
+        status, payload = "error", "MemoryError: el proceso de extracción terminó sin respuesta"
+    finally:
+        if proc.is_alive():
+            proc.kill()
+        proc.join()
+        recv.close()
+    if status != "ok":
+        raise RuntimeError(payload)
+    return payload
+
+
 def classify_exclusion(message: str) -> str:
     """Motivo de exclusión normalizado (corrección 1.5)."""
     m = message.lower()
@@ -198,6 +277,8 @@ def classify_exclusion(message: str) -> str:
     if any(k in m for k in ("zip slip", "dispositivo", "tamaño máximo", "número máximo",
                             "formato de archivo no soportado")):
         return "rechazado por extracción segura"
+    if "memoryerror" in m or "timeouterror" in m:
+        return "excede límites de recursos"
     return "otro error"
 
 
@@ -214,7 +295,7 @@ def _write_cache(path: Path, cached: dict[str, dict]) -> None:
     names = feature_names()
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", newline="", encoding="utf-8") as fh:
-        w = csv.DictWriter(fh, fieldnames=["sha256", "label", "extractor_commit"] + names,
+        w = csv.DictWriter(fh, fieldnames=["sha256", "label", "extractor_commit", "extractor_hash"] + names,
                            extrasaction="ignore")
         w.writeheader()
         for row in cached.values():
@@ -228,13 +309,20 @@ def load_dataset(manifest: Path, cache: Path = FEATURES_CACHE,
     Con refresh=True ignora la caché y vuelve a extraer todo con el código actual.
     """
     names = feature_names()
-    cached = {} if refresh else _read_cache(cache)
-    previous: dict[str, dict] = {}
-    if refresh:  # caché anterior: la única nueva y las antiguas por partición
+    commit, xhash = git_commit(), extractor_hash()
+    ext_cfg = CFG.get("extraction", {})
+    mem_mb = int(ext_cfg.get("max_mem_mb", 2048))
+    timeout_s = int(ext_cfg.get("timeout_s", 600))
+    on_disk = _read_cache(cache)
+    if refresh:  # solo vale lo ya calculado con el extractor actual (reanudación)
+        cached = {k: v for k, v in on_disk.items() if v.get("extractor_hash") == xhash}
+        previous: dict[str, dict] = {}
         for old in (config.DATA_DIR / "features_train.csv",
-                    config.DATA_DIR / "features_holdout.csv", cache):
+                    config.DATA_DIR / "features_holdout.csv"):
             previous.update(_read_cache(old))
-    commit = git_commit()
+        previous.update({k: v for k, v in on_disk.items() if v.get("extractor_hash") != xhash})
+    else:
+        cached, previous = on_disk, {}
 
     with open(manifest, newline="", encoding="utf-8") as fh:
         rows = list(csv.DictReader(fh))
@@ -246,6 +334,7 @@ def load_dataset(manifest: Path, cache: Path = FEATURES_CACHE,
     y: list[int] = []
     meta: list[dict] = []
     exclusions: list[dict] = []
+    pending = 0
     for i, row in enumerate(rows, 1):
         sha, label = row["sha256"], row["label"]
         if sha in cached:
@@ -256,17 +345,21 @@ def load_dataset(manifest: Path, cache: Path = FEATURES_CACHE,
             try:
                 if not sample.exists():
                     raise FileNotFoundError(f"no existe: {sample}")
-                feats = extract_row(sample, kind, meta_extractor)
+                feats = extract_isolated(sample, kind, meta_extractor, mem_mb, timeout_s)
             except Exception as exc:  # noqa: BLE001 - robustez ante muestras corruptas
                 exclusions.append({"sha256": sha, "path": row["path"], "label": label,
                                    "source": row.get("source", ""),
                                    "motivo": classify_exclusion(f"{type(exc).__name__}: {exc}"),
                                    "error": f"{type(exc).__name__}: {exc}"[:300]})
+                print(f"  [{i}/{len(rows)}] excluida: {row['path']} ({exclusions[-1]['motivo']})")
                 continue
-            if i % 200 == 0:
-                print(f"  [{i}/{len(rows)}] extraídas")
             cached[sha] = {**{n: feats[n] for n in names}, "sha256": sha, "label": label,
-                           "extractor_commit": commit}
+                           "extractor_commit": commit, "extractor_hash": xhash}
+            pending += 1
+            if pending >= 100:  # punto de control: un corte no pierde lo ya extraído
+                _write_cache(cache, {**_read_cache(cache), **cached})
+                pending = 0
+                print(f"  [{i}/{len(rows)}] extraídas (caché guardada)")
         X.append([feats[n] for n in names])
         y.append(1 if label == "malicious" else 0)
         meta.append({"sha256": sha, "label": label, "source": row.get("source", ""),
@@ -279,7 +372,8 @@ def load_dataset(manifest: Path, cache: Path = FEATURES_CACHE,
     _write_cache(cache, merged)
     _append_exclusions(manifest, exclusions)
     if refresh:
-        _report_refresh(manifest, previous, cached, exclusions, names, commit)
+        fresh = {m["sha256"]: cached[m["sha256"]] for m in meta}
+        _report_refresh(manifest, previous, fresh, exclusions, names, commit)
     if exclusions:
         print(f"  Excluidas {len(exclusions)} muestras de {manifest.name} "
               f"(detalle en data/analysis/exclusiones.csv)", file=sys.stderr)
