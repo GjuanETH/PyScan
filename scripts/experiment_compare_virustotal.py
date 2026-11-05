@@ -155,7 +155,7 @@ def main() -> int:
               "Consíguela gratis en https://www.virustotal.com/gui/join-us")
         return 1
 
-    manifest = args.from_csv or (config.DATA_DIR / "holdout.csv")
+    manifest = args.from_csv or tm.manifest_path("holdout")
     if not manifest.exists():
         print(f"No existe {manifest}. Corre build_dataset.py y train_model.py --holdout")
         return 1
@@ -218,6 +218,7 @@ def main() -> int:
             tally(py_by_src[src], py_mal); tally(av_by_src[src], av_mal)
         per_sample.append({"package": p.name, "label": row["label"], "source": src,
                            "pyscan_malicious": bool(py_mal),
+                           "vt_found": bool(found_any),
                            "vt_detections": best_mal,
                            "vt_malicious": bool(av_mal),
                            "vt_top_engines": ";".join(sorted(best_engines)[:5])})
@@ -263,12 +264,13 @@ def main() -> int:
                   s: {"pyscan": _metrics(**py_by_src[s])["recall"] if py_by_src[s] else None,
                       "virustotal": _metrics(**av_by_src[s])["recall"] if av_by_src[s] else None}
                   for s in sorted(set(list(py_by_src) + list(av_by_src)))}}
+    report["ejecucion"] = tm.run_info({"virustotal": "API v3, consulta solo por sha256 (no se suben archivos)", "min_detecciones": args.min_detections})
     (OUT_DIR / "compare_virustotal.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "compare_virustotal_per_sample.csv", "w", newline="",
               encoding="utf-8") as fh:
         w = csv.DictWriter(fh, fieldnames=["package", "label", "source",
-                           "pyscan_malicious", "vt_detections", "vt_malicious",
+                           "pyscan_malicious", "vt_found", "vt_detections", "vt_malicious",
                            "vt_top_engines"])
         w.writeheader(); w.writerows(per_sample)
     print(f"\nDatos: {OUT_DIR/'compare_virustotal.json'} | "

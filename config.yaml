@@ -1,0 +1,36 @@
+# Protocolo experimental congelado de pyscan (corrección 1.6).
+# Todo lo que influye en las cifras de la tesis está aquí; train_model.py,
+# experiment_ablation.py y los reportes lo leen. Cambiar un valor = otro experimento.
+
+seed: 42                 # semilla de particiones, SMOTE/SMOTENC y modelos
+k_folds: 5               # validación cruzada estratificada (agrupada si el manifiesto trae group_id)
+target_recall: 0.90      # KPI: el umbral se elige con F1 máximo sujeto a Recall >= este valor
+threshold_grid:          # umbrales evaluados SOLO sobre predicciones out-of-fold
+  start: 0.05
+  stop: 0.95
+  step: 0.01
+
+# Sobremuestreo dentro de cada partición de entrenamiento:
+#   smotenc = SMOTE para variables mixtas (respeta las binarias)  <- protocolo final
+#   smote   = SMOTE clásico (versión anterior, solo para comparar)
+#   none    = sin sobremuestreo
+sampler: smotenc
+binary_features: [is_typosquat, has_combo_affix, ast_has_install_hook]
+
+models:
+  random_forest:
+    n_estimators: 300
+    class_weight: balanced
+  xgboost:
+    n_estimators: 300
+    max_depth: 6
+    learning_rate: 0.1
+
+# Manifiestos (build_dataset.py los crea; audit_independence.py --resplit crea
+# las versiones agrupadas *_grouped.csv con la columna group_id).
+manifests:
+  train: data/train.csv
+  holdout: data/holdout.csv
+
+# Caché única de características (por sha256). --refresh-features la reconstruye.
+features_cache: data/features_all.csv

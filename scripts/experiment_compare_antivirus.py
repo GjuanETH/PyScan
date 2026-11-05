@@ -90,7 +90,7 @@ def main() -> int:
         print("No se encontró clamscan. Instala ClamAV: sudo apt-get install -y clamav")
         return 1
 
-    manifest = args.from_csv or (config.DATA_DIR / "holdout.csv")
+    manifest = args.from_csv or tm.manifest_path("holdout")
     if not manifest.exists():
         print(f"No existe {manifest}. Corre build_dataset.py y train_model.py --holdout")
         return 1
@@ -174,6 +174,7 @@ def main() -> int:
                   s: {"pyscan": _metrics(**py_by_src[s])["recall"] if py_by_src[s] else None,
                       "clamav": _metrics(**av_by_src[s])["recall"] if av_by_src[s] else None}
                   for s in sorted(set(list(py_by_src) + list(av_by_src)))}}
+    report["ejecucion"] = tm.run_info({"clamav_version_y_firmas": tm.tool_version([_CLAMSCAN, "--version"])})
     (OUT_DIR / "compare_antivirus.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "compare_antivirus_per_sample.csv", "w", newline="", encoding="utf-8") as fh:

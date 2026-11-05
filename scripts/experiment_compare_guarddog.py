@@ -103,7 +103,7 @@ def main() -> int:
     if args.guarddog_bin:
         _GUARDDOG_BIN = str(Path(args.guarddog_bin).expanduser())
 
-    manifest = args.from_csv or (config.DATA_DIR / "holdout.csv")
+    manifest = args.from_csv or tm.manifest_path("holdout")
     if not manifest.exists():
         print(f"No existe {manifest}. Corre scripts/build_dataset.py y train_model.py --holdout")
         return 1
@@ -197,6 +197,7 @@ def main() -> int:
                   src: {"pyscan": _metrics(**py_by_src[src])["recall"] if py_by_src[src] else None,
                         "guarddog": _metrics(**gd_by_src[src])["recall"] if gd_by_src[src] else None}
                   for src in sorted(set(list(py_by_src) + list(gd_by_src)))}}
+    report["ejecucion"] = tm.run_info({"guarddog_version": tm.tool_version(_guarddog_cmd() + ["--version"]), "politica_errores": "excluidos del conteo de GuardDog; ver report_comparisons.py para la política común"})
     (OUT_DIR / "compare_guarddog.json").write_text(
         json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "compare_guarddog_per_sample.csv", "w", newline="", encoding="utf-8") as fh:

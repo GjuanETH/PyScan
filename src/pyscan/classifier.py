@@ -11,6 +11,7 @@ no están instaladas, se lanza ModelNotAvailable y el CLI degrada con un aviso.
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Optional
 
@@ -34,6 +35,7 @@ def load_bundle(path: Optional[Path] = None) -> dict:
         raise ModelNotAvailable(
             f"No hay modelo entrenado en {model_path}. " "Ejecuta: python scripts/train_model.py"
         )
+    _verify_hash(model_path)
     try:
         import joblib
     except ImportError as exc:  # pragma: no cover
@@ -44,6 +46,28 @@ def load_bundle(path: Optional[Path] = None) -> dict:
     if not isinstance(bundle, dict) or "model" not in bundle:
         raise ModelNotAvailable(f"Formato de modelo no reconocido en {model_path}.")
     return bundle
+
+
+def _verify_hash(model_path: Path) -> None:
+    """Verifica el sha256 del modelo ANTES de deserializarlo.
+
+    joblib/pickle puede ejecutar código al cargar, así que un modelo alterado es
+    un riesgo. Si existe `<modelo>.sha256` (lo escribe train_model.py), el hash
+    debe coincidir; si no coincide, el modelo no se carga.
+    """
+    sidecar = Path(str(model_path) + ".sha256")
+    if not sidecar.exists():
+        return
+    expected = sidecar.read_text(encoding="utf-8").split()[0].strip().lower()
+    h = hashlib.sha256()
+    with open(model_path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(65536), b""):
+            h.update(chunk)
+    if h.hexdigest() != expected:
+        raise ModelNotAvailable(
+            f"El sha256 de {model_path.name} no coincide con {sidecar.name}: "
+            "el modelo pudo ser alterado y no se cargará."
+        )
 
 
 def _positive_index(model) -> int:
@@ -66,6 +90,10 @@ def predict(
 
     row = fv.to_row()
     X = [[float(row.get(n, 0.0)) for n in names]]
+    # Para UNA fila, repartir los árboles en varios hilos (n_jobs=-1) cuesta más que
+    # lo que ahorra; se predice en un solo hilo (el resultado es idéntico).
+    if getattr(model, "n_jobs", None) not in (None, 1) and hasattr(model, "set_params"):
+        model.set_params(n_jobs=1)
 
     if hasattr(model, "predict_proba"):
         score = float(model.predict_proba(X)[0][_positive_index(model)])

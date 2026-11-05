@@ -79,3 +79,15 @@ def test_threshold_respected(tmp_path: Path):
     bundle["threshold"] = 0.999999
     pred = predict(_malicious_fv(), bundle=bundle)
     assert pred.verdict == Verdict.BENIGN or pred.score >= 0.999999
+
+
+def test_model_hash_is_verified_before_loading(tmp_path: Path):
+    import hashlib
+
+    path = _train_bundle(tmp_path)
+    sidecar = Path(str(path) + ".sha256")
+    sidecar.write_text(hashlib.sha256(path.read_bytes()).hexdigest() + "\n", encoding="utf-8")
+    assert "model" in load_bundle(path)  # hash correcto: carga
+    sidecar.write_text("0" * 64 + "\n", encoding="utf-8")
+    with pytest.raises(ModelNotAvailable):  # hash alterado: no se deserializa
+        load_bundle(path)

@@ -85,14 +85,14 @@ def main() -> int:
                     help="prevalencia para el barrido de umbral (0.01 = 1:100)")
     args = ap.parse_args()
 
-    holdout_csv = config.DATA_DIR / "holdout.csv"
+    holdout_csv = tm.manifest_path("holdout")
     if not holdout_csv.exists():
         print("No existe data/holdout.csv. Corre scripts/build_dataset.py y train_model.py --holdout")
         return 1
 
     model, names, base_thr, pos = _load_model()
     print("== Extracción de características del hold-out (usa caché si existe) ==")
-    X, y = tm.load_or_extract_features(holdout_csv, config.DATA_DIR / "features_holdout.csv")
+    X, y = tm.load_or_extract_features(holdout_csv)
     X = np.asarray(X, dtype=float); y = np.asarray(y, dtype=int)
     probs = model.predict_proba(X)[:, pos]
     tpr, fpr = _rates(y, probs, base_thr)

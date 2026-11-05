@@ -32,3 +32,19 @@ def test_page_uses_spanish_number_format():
     page = webapp.app.test_client().get("/").data.decode("utf-8")
     assert "toLocaleString('es-CO'" in page
     assert "no existe" in page
+
+
+def test_web_only_local_and_upload_limited(monkeypatch):
+    import io
+
+    from pyscan import config
+
+    assert webapp.HOST == "127.0.0.1"
+    assert webapp.app.config["MAX_CONTENT_LENGTH"] == config.MAX_DOWNLOAD_BYTES
+    monkeypatch.setitem(webapp.app.config, "MAX_CONTENT_LENGTH", 1024)
+    resp = webapp.app.test_client().post(
+        "/api/scan-local",
+        data={"file": (io.BytesIO(b"x" * 4096), "x.tar.gz")},
+        content_type="multipart/form-data",
+    )
+    assert resp.status_code == 413

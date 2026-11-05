@@ -16,15 +16,57 @@ momento se importa ni ejecuta el código analizado.
 from __future__ import annotations
 
 import ast
+import ipaddress
 import re
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlsplit
 
 from .. import config
 from ..models import ASTReport, Finding
 
 _URL_RE = re.compile(r"https?://[^\s\"'<>]+")
-_IP_RE = re.compile(r"\b(?:\d{1,3}\.){3}\d{1,3}\b")
+
+# Nombres cuyo valor es un número de versión, no una dirección de red
+# (p. ej. __version__ = "1.2.3.4" o setup(version="0.3.30.0")).
+_VERSION_NAMES = {"version", "__version__", "python_requires", "version_info", "__version_info__"}
+# 0.0.0.0/8 no es una dirección de destino válida; ahí caen los números de
+# versión de cuatro partes que empiezan por 0 (0.3.30.0).
+_NON_ROUTABLE_V4 = ipaddress.IPv4Network("0.0.0.0/8")
+
+
+def _as_ipv4(text: str) -> Optional[str]:
+    """Devuelve la IPv4 normalizada si `text` es EXACTAMENTE una IPv4 de destino."""
+    try:
+        ip = ipaddress.IPv4Address(text.strip())
+    except ValueError:
+        return None
+    if ip in _NON_ROUTABLE_V4:
+        return None
+    return str(ip)
+
+
+def _url_host_ip(url: str) -> Optional[str]:
+    """IPv4 del host de una URL (http://1.2.3.4:8080/x -> 1.2.3.4), si la hay."""
+    try:
+        host = urlsplit(url).hostname
+    except ValueError:
+        return None
+    return _as_ipv4(host) if host else None
+
+
+def _target_names(node: ast.AST) -> list[str]:
+    """Nombres simples asignados por un Assign/AnnAssign (x = ..., obj.x = ...)."""
+    targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+    names: list[str] = []
+    for t in targets:
+        for sub in ast.walk(t):
+            if isinstance(sub, ast.Name):
+                names.append(sub.id)
+            elif isinstance(sub, ast.Attribute):
+                names.append(sub.attr)
+    return names
+
 
 # Nombres de funciones peligrosas (último componente) y rutas con punto.
 _DANGEROUS = set(config.AST_DANGEROUS_CALLS)
@@ -60,6 +102,25 @@ class _Visitor(ast.NodeVisitor):
         # Mapa de alias local -> nombre real, para resistir evasiones del tipo
         # `import subprocess as sp; sp.run(...)` o `from os import system as s`.
         self._aliases: dict[str, str] = {}
+        # Constantes que son números de versión (no se cuentan como red).
+        self._version_consts: set[int] = set()
+
+    def _mark_version_value(self, value: Optional[ast.AST]) -> None:
+        if value is None:
+            return
+        for sub in ast.walk(value):
+            if isinstance(sub, ast.Constant):
+                self._version_consts.add(id(sub))
+
+    def visit_Assign(self, node: ast.Assign) -> None:
+        if any(n.lower() in _VERSION_NAMES for n in _target_names(node)):
+            self._mark_version_value(node.value)
+        self.generic_visit(node)
+
+    def visit_AnnAssign(self, node: ast.AnnAssign) -> None:
+        if any(n.lower() in _VERSION_NAMES for n in _target_names(node)):
+            self._mark_version_value(node.value)
+        self.generic_visit(node)
 
     def visit_Import(self, node: ast.Import) -> None:
         for alias in node.names:
@@ -84,6 +145,10 @@ class _Visitor(ast.NodeVisitor):
         return f"{real}.{rest}" if rest else real
 
     def visit_Call(self, node: ast.Call) -> None:
+        # setup(version="1.2.3.4", python_requires=">=3.8"): no son direcciones.
+        for kw in node.keywords:
+            if kw.arg and kw.arg.lower() in _VERSION_NAMES:
+                self._mark_version_value(kw.value)
         name = _call_name(node)
         if name:
             resolved = self._resolve(name)
@@ -102,16 +167,25 @@ class _Visitor(ast.NodeVisitor):
                 )
         self.generic_visit(node)
 
+    def _add_network(self, value: str, line: int) -> None:
+        if value not in self.network:
+            self.findings.append(Finding(kind="network", name=value, file=self.relfile, line=line))
+        self.network.add(value)
+
     def visit_Constant(self, node: ast.Constant) -> None:
-        if isinstance(node.value, str):
+        if isinstance(node.value, str) and id(node) not in self._version_consts:
             line = getattr(node, "lineno", 0)
-            for m in _URL_RE.findall(node.value):
-                self.network.add(m)
-                self.findings.append(Finding(kind="network", name=m, file=self.relfile, line=line))
-            for m in _IP_RE.findall(node.value):
-                # Evita falsos positivos triviales como números de versión.
-                self.network.add(m)
-                self.findings.append(Finding(kind="network", name=m, file=self.relfile, line=line))
+            for url in _URL_RE.findall(node.value):
+                self._add_network(url, line)
+                host_ip = _url_host_ip(url)
+                if host_ip:
+                    self._add_network(host_ip, line)
+            # Una IP cuenta solo si la cadena ES exactamente una IPv4 de destino
+            # (validada con ipaddress); no se buscan IPs dentro de textos largos,
+            # porque así se colaban números de versión como "1.2.3.4".
+            ip = _as_ipv4(node.value)
+            if ip:
+                self._add_network(ip, line)
         self.generic_visit(node)
 
 

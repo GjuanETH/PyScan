@@ -26,3 +26,7 @@ data/malicious/
 
 # Entorno
 .env
+
+# Evidencia privada y cachés grandes
+evidencia/
+data/fingerprints.jsonl

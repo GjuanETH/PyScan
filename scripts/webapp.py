@@ -37,6 +37,10 @@ from pyscan.cli import _scan_pypi, _scan_local, _parse_requirements  # noqa: E40
 from pyscan.models import Verdict, ScanReport  # noqa: E402
 
 app = Flask(__name__)
+# Seguridad propia: la interfaz solo escucha en 127.0.0.1 (ver app.run) y limita
+# el tamaño de lo que se sube (igual que el tope de descarga del fetcher).
+app.config["MAX_CONTENT_LENGTH"] = config.MAX_DOWNLOAD_BYTES
+HOST = "127.0.0.1"
 
 # Literales tipo "0.3.30.0": son números de versión que el extractor AST toma por
 # direcciones IPv4 (0.x.x.x no es una IP enrutable). Solo se ocultan en pantalla;
@@ -546,13 +550,15 @@ async function loadGeneral(){
       'De cada 100 paquetes maliciosos reales, el modelo detecta ~'+NF(ho.recall*100,0)+'. Medido sobre los '+NF(ho.n_samples||0,0).replace(/^0$/,'')+' paquetes que el modelo nunca vio al entrenar (hold-out). Es la métrica clave: mide cuánto malware NO se escapa.');
          k+=kpi(NF(ho.f1,3),'F1-Score (hold-out)',
       'Equilibrio entre detectar malware (recall) y no dar falsas alarmas (precisión); cerca de 1 es mejor. Medido en el hold-out.');}
-  if(cv){k+=kpi(PCT(cv.false_positive_rate),'Falsos positivos (val. cruzada)',
-      'De cada 100 paquetes benignos, ~'+NF(cv.false_positive_rate*100,1)+' se marcan por error como maliciosos. Medido en validación cruzada estratificada de 5 particiones.');
+  const fpSrc=(ho&&ho.false_positive_rate!=null)?ho:cv, fpLbl=(fpSrc===ho)?'hold-out':'val. cruzada';
+  if(fpSrc){k+=kpi(PCT(fpSrc.false_positive_rate),'Falsos positivos ('+fpLbl+')',
+      'De cada 100 paquetes benignos, ~'+NF(fpSrc.false_positive_rate*100,1)+' se marcan por error como maliciosos. Medido en '+(fpSrc===ho?'el hold-out (muestras no vistas).':'validación cruzada de 5 particiones.'));}
+  if(cv){
          k+=kpi(NF(cv.pr_auc,3),'PR-AUC (val. cruzada)',
       'Área bajo la curva Precisión-Recall; mide qué tan bien separa malicioso de benigno con clases desbalanceadas (1 es perfecto). Medido en validación cruzada.');}
-  const ts=d.benchmark&&d.benchmark.tiempo_seg;
+  const bm=d.benchmark, ts=bm&&((bm.tiempo_seg_por_etapa&&bm.tiempo_seg_por_etapa.total)||bm.tiempo_seg);
   if(ts&&ts.media!=null){k+=kpi(NF(ts.media,2)+' s','Tiempo medio por paquete',
-      'Descarga desde PyPI + análisis estático + veredicto del modelo. Mediana '+NF(ts.mediana,2)+' s, p95 '+NF(ts.p95,2)+' s, máximo '+NF(ts.max,2)+' s (paquetes muy grandes). Medido con benchmark_performance.py.');}
+      'Extracción segura + análisis estático + veredicto del modelo, sobre muestras locales (sin descarga). Mediana '+NF(ts.mediana,2)+' s, p95 '+NF(ts.p95,2)+' s, máximo '+NF(ts.max,2)+' s (paquetes muy grandes). Medido con benchmark_performance.py.');}
   const used=(m&&ho&&m.n_samples&&ho.n_samples)?m.n_samples+ho.n_samples:null;
   if(used){const man=d.dataset?(d.dataset.malicious+d.dataset.benign):null;
     k+=kpi(NF(used,0),'Muestras usadas',
@@ -697,4 +703,4 @@ function renderAnalysis(){
 
 if __name__ == "__main__":
     print("pyscan web  →  http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=False)
+    app.run(host=HOST, port=5000, debug=False)

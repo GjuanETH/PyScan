@@ -107,3 +107,34 @@ def test_findings_have_file_and_line(tmp_path: Path):
     calls = [f for f in rep.findings if f.kind == "dangerous_call"]
     assert calls
     assert all(f.line > 0 and f.file == "mod.py" for f in calls)
+
+
+VERSIONS = """
+__version__ = "1.2.3.4"
+VERSION: str = "0.3.30.0"
+from setuptools import setup
+setup(name="x", version="2.0.1.7", python_requires=">=3.8")
+compat = ["0.3.33.112", "1.0.0.0rc1"]
+banner = "built with tool 4.5.6.7 on linux"
+"""
+
+NETWORK_REAL = """
+HOST = "45.33.12.9"
+URL = "http://185.10.20.30:8080/payload"
+BIND = "0.0.0.0"
+"""
+
+
+def test_version_strings_are_not_ips(tmp_path: Path):
+    (tmp_path / "setup.py").write_text(VERSIONS, encoding="utf-8")
+    rep = ASTExtractor().extract(tmp_path)
+    assert rep.network_literals == []
+
+
+def test_exact_ips_and_url_hosts_are_counted(tmp_path: Path):
+    (tmp_path / "mod.py").write_text(NETWORK_REAL, encoding="utf-8")
+    rep = ASTExtractor().extract(tmp_path)
+    assert "45.33.12.9" in rep.network_literals
+    assert "185.10.20.30" in rep.network_literals
+    assert "http://185.10.20.30:8080/payload" in rep.network_literals
+    assert "0.0.0.0" not in rep.network_literals

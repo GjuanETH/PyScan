@@ -75,20 +75,22 @@ def _columns_for(groups: list[str], names: list[str]) -> list[int]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--k", type=int, default=5)
-    ap.add_argument("--target-recall", type=float, default=0.90)
+    ap.add_argument("--k", type=int, default=tm.CFG.get("k_folds", 5))
+    ap.add_argument("--target-recall", type=float, default=tm.CFG.get("target_recall", 0.90))
     ap.add_argument("--no-smote", action="store_true")
     ap.add_argument("--xgb", action="store_true", help="usa XGBoost (por defecto Random Forest)")
     args = ap.parse_args()
 
-    train_csv = config.DATA_DIR / "train.csv"
+    train_csv = tm.manifest_path("train")
     if not train_csv.exists():
-        print("No existe data/train.csv. Corre antes scripts/build_dataset.py")
+        print(f"No existe {train_csv}. Corre antes scripts/build_dataset.py")
         return 1
 
     names = feature_names()
     print("== Extracción de características (usa caché si existe) ==")
-    X_full, y = tm.load_or_extract_features(train_csv, tm.FEATURES_CACHE)
+    X_full, y, meta = tm.load_dataset(train_csv)
+    cv_groups = [m["group_id"] for m in meta]
+    cv_groups = cv_groups if any(cv_groups) else None
     X_full = np.asarray(X_full, dtype=float)
     y = np.asarray(y, dtype=int)
     n_pos, n_neg = int(y.sum()), int(len(y) - y.sum())
@@ -103,7 +105,8 @@ def main() -> int:
         # el efecto de las características (no del modelo).
         model = tm.make_models(y, use_xgb=args.xgb)
         model = model["xgboost"] if args.xgb and "xgboost" in model else model["random_forest"]
-        probs = tm.oof_probabilities(model, Xc, y, args.k, use_smote=not args.no_smote)
+        probs = tm.oof_probabilities(model, Xc, y, args.k, use_smote=not args.no_smote,
+                                     groups=cv_groups, columns=[names[j] for j in cols])
         _, metrics = tm.tune_threshold(y, probs, args.target_recall)
         results[label] = {"n_features": len(cols), "metrics": metrics}
         print(f"  {label:<32} recall={metrics['recall']:.4f} "
@@ -114,6 +117,8 @@ def main() -> int:
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     (OUT_DIR / "ablation.json").write_text(
         json.dumps({"n_samples": len(y), "algorithm": "xgboost" if args.xgb else "random_forest",
+                    "sampler": "none" if args.no_smote else tm.CFG.get("sampler", "smotenc"),
+                    "grouped_cv": cv_groups is not None, "git_commit": tm.git_commit(),
                     "configs": results}, indent=2, ensure_ascii=False), encoding="utf-8")
     with open(OUT_DIR / "ablation.csv", "w", newline="", encoding="utf-8") as fh:
         w = csv.writer(fh)
@@ -127,7 +132,7 @@ def main() -> int:
     # --- Tabla e interpretación automática ---
     base = results["Todas (baseline)"]["metrics"]["f1"]
     solo_nombre = results["Solo nombre"]["metrics"]["f1"]
-    sin_nombre = results["Sin nombre (prueba de fuga)"]["metrics"]
+    sin_nombre = results["Sin nombre (solo código)"]["metrics"]
     print("\n| Configuración | Recall | F1 | FP |")
     print("|---|---|---|---|")
     for label, r in results.items():
@@ -143,7 +148,8 @@ def main() -> int:
               f"(F1={base:.3f}): el nombre no lo explica todo.")
     if sin_nombre["recall"] >= 0.85:
         print(f"  ✓ Sin las señales de nombre, el modelo mantiene Recall="
-              f"{sin_nombre['recall']:.3f}: las señales de código discriminan por sí solas.")
+              f"{sin_nombre['recall']:.3f}: descarta la fuga por el NOMBRE, no por familia,\n"
+              f"    versión o fuente (eso lo mide scripts/audit_independence.py).")
     else:
         print(f"  ⚠ Sin nombre, el Recall cae a {sin_nombre['recall']:.3f}: el modelo "
               f"depende fuertemente del nombre.")
