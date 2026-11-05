@@ -15,8 +15,8 @@ Pasos:
      u otra versión, conjunto de huellas idéntico y Jaccard >= 0,8.
   4. Componentes conexos (union-find) -> group_id.
   5. Informe de cruces entrenamiento <-> hold-out por tipo, clase y fuente.
-  6. Siempre escribe data/train_grouped.csv y data/holdout_grouped.csv (con
-     group_id). Con --resplit ningún grupo queda a ambos lados: "minimo" mueve
+  6. Solo con --resplit escribe data/train_grouped.csv y data/holdout_grouped.csv
+     (con group_id); ningún grupo queda a ambos lados: "minimo" mueve
      al entrenamiento solo los grupos compartidos; "completo" rehace el 80/20 con
      StratifiedGroupKFold.
 
@@ -301,21 +301,24 @@ def main() -> int:
         metodo = "completo: StratifiedGroupKFold(n_splits=5), primer pliegue como hold-out"
     if args.resplit:
         moved = sum(1 for r in rows if r["split"] != r["split_nuevo"])
+        sides = defaultdict(set)
+        for r in rows:
+            sides[r["group_id"]].add(r["split_nuevo"])
         report["reparticion"] = {
             "metodo": metodo,
             "semilla": seed, "muestras_que_cambian_de_lado": moved,
+            "grupos_a_ambos_lados_despues": sum(1 for v in sides.values() if len(v) > 1),
             "train": breakdown([i for i, r in enumerate(rows) if r["split_nuevo"] == "train"]),
             "holdout": breakdown([i for i, r in enumerate(rows) if r["split_nuevo"] == "holdout"]),
         }
-        key = "split_nuevo"
-    else:
-        key = "split"
-    for split in ("train", "holdout"):
-        out = ROOT / "data" / f"{split}_grouped.csv"
-        with open(out, "w", newline="", encoding="utf-8") as fh:
-            w = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
-            w.writeheader()
-            w.writerows(r for r in rows if r[key] == split)
+        # Los manifiestos *_grouped.csv SOLO se escriben con --resplit: sin él, la
+        # auditoría mide la partición original y no debe pisar la agrupada.
+        for split in ("train", "holdout"):
+            out = ROOT / "data" / f"{split}_grouped.csv"
+            with open(out, "w", newline="", encoding="utf-8") as fh:
+                w = csv.DictWriter(fh, fieldnames=fields, extrasaction="ignore")
+                w.writeheader()
+                w.writerows(r for r in rows if r["split_nuevo"] == split)
 
     OUT_JSON.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     h = report["holdout_con_pariente_en_train"]
@@ -323,11 +326,15 @@ def main() -> int:
     print(f"Hold-out con pariente en entrenamiento: {h['total']} ({h['porcentaje']} %)")
     for t, n in h["por_tipo"].items():
         print(f"  {t}: {n}")
-    if args.resplit:
-        print(f"Repartición agrupada: {report['reparticion']['muestras_que_cambian_de_lado']} "
-              "muestras cambian de lado")
     print(f"\nInforme: {OUT_JSON.relative_to(ROOT)} | pares: {OUT_PAIRS.relative_to(ROOT)}")
-    print("Manifiestos con group_id: data/train_grouped.csv, data/holdout_grouped.csv")
+    if args.resplit:
+        rep = report["reparticion"]
+        print(f"Repartición agrupada: {rep['muestras_que_cambian_de_lado']} muestras cambian de "
+              f"lado; grupos a ambos lados después: {rep['grupos_a_ambos_lados_despues']}")
+        print("Manifiestos escritos: data/train_grouped.csv, data/holdout_grouped.csv")
+    else:
+        print("Solo informe de la partición original: data/*_grouped.csv NO se modificó "
+              "(usa --resplit para escribirlos).")
     return 0
 
 
